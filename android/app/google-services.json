@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1026031722068",
+    "project_id": "noteforge-9d9f7",
+    "storage_bucket": "noteforge-9d9f7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1026031722068:android:0317aee35dcd277607d7c1",
+        "android_client_info": {
+          "package_name": "com.example.noteforge"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1026031722068-houut9jbgargsq5l7l11373nbproaknq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.noteforge",
+            "certificate_hash": "e1e9fc0ab3ab2d81c83bab895e9065135d072935"
+          }
+        },
+        {
+          "client_id": "1026031722068-tbb5uhcp00pui5natmsk6hdtv8trrnc9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAH5z_qxjruWlBlosvuvgQ2XWFcHIMb_ik"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1026031722068-tbb5uhcp00pui5natmsk6hdtv8trrnc9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
