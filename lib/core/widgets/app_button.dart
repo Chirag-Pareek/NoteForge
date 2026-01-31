@@ -41,7 +41,7 @@ class AppButton extends StatelessWidget {
             horizontal: AppSpacing.xl,
             vertical: AppSpacing.md,
           ),
-          disabledBackgroundColor: backgroundColor.withOpacity(0.5),
+          disabledBackgroundColor: backgroundColor.withAlpha((0.5 * 255).toInt()),
         ),
         child: isLoading
             ? SizedBox(
