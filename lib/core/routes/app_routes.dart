@@ -4,4 +4,5 @@ class AppRoutes {
   static const String signup = '/signup';
   static const String home = '/home';
   static const String profileSetup = '/profile-setup';
+  static const String profilEdit = "/editprofile";
 }
