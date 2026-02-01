@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:noteforge/features/home/presentation/profile_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -19,28 +20,27 @@ class _MainShellState extends State<MainShell> {
     const Scaffold(body: Center(child: Text('Study'))),
     const Scaffold(body: Center(child: Text('Chat'))),
     const Scaffold(body: Center(child: Text('Progress'))),
-    const Scaffold(body: Center(child: Text('Profile'))),
+    const ProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryText = isDark ? AppColorsDark.primaryText : AppColorsLight.primaryText;
-    final secondaryText = isDark ? AppColorsDark.secondaryText : AppColorsLight.secondaryText;
+    final primaryText = isDark
+        ? AppColorsDark.primaryText
+        : AppColorsLight.primaryText;
+    final secondaryText = isDark
+        ? AppColorsDark.secondaryText
+        : AppColorsLight.secondaryText;
     final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
 
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _screens),
       bottomNavigationBar: Container(
         height: 64,
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
-          border: Border(
-            top: BorderSide(color: borderColor),
-          ),
+          border: Border(top: BorderSide(color: borderColor)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -119,7 +119,7 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = isActive ? activeColor : inactiveColor;
-    
+
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -127,18 +127,11 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              size: 24,
-              color: color,
-            ),
+            Icon(isActive ? activeIcon : icon, size: 24, color: color),
             const SizedBox(height: AppSpacing.xs),
             Text(
               label,
-              style: AppTextStyles.label.copyWith(
-                color: color,
-                fontSize: 11,
-              ),
+              style: AppTextStyles.label.copyWith(color: color, fontSize: 11),
             ),
           ],
         ),
