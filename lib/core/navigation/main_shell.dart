@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:noteforge/features/home/presentation/profile_screen.dart';
+import 'package:noteforge/features/home/presentation/study_hub_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -17,7 +18,7 @@ class _MainShellState extends State<MainShell> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const Scaffold(body: Center(child: Text('Study'))),
+    const StudyHubScreen(),
     const Scaffold(body: Center(child: Text('Chat'))),
     const Scaffold(body: Center(child: Text('Progress'))),
     const ProfileScreen(),
