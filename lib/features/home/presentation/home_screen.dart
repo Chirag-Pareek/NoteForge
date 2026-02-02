@@ -5,7 +5,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
-import '../../../core/routes/app_routes.dart';
 import '../../../core/responsive/app_breakpoints.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -34,10 +33,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final secondaryText = isDark ? AppColorsDark.secondaryText : AppColorsLight.secondaryText;
+    final secondaryText = isDark
+        ? AppColorsDark.secondaryText
+        : AppColorsLight.secondaryText;
     final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
-    final lightBg = isDark ? AppColorsDark.lightBackground : AppColorsLight.lightBackground;
-    final primaryText = isDark ? AppColorsDark.primaryText : AppColorsLight.primaryText;
+    final lightBg = isDark
+        ? AppColorsDark.lightBackground
+        : AppColorsLight.lightBackground;
 
     // Step 2: Use LayoutBuilder for responsiveness
     return LayoutBuilder(
@@ -55,58 +57,16 @@ class _HomeScreenState extends State<HomeScreen> {
         // Step 4: Pure Content Screen (No Navigation Shell)
         return Scaffold(
           appBar: AppBar(
+            centerTitle: true,
+            leading: const SizedBox(),
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             elevation: 0,
             title: Text(
               'NoteForge',
-              style: (isTablet ? AppTextStyles.display : AppTextStyles.bodyLarge)
-                  .copyWith(fontWeight: FontWeight.w800),
+              style:
+                  (isTablet ? AppTextStyles.display : AppTextStyles.bodyLarge)
+                      .copyWith(fontWeight: FontWeight.w800),
             ),
-            actions: [
-              Padding(
-                padding: EdgeInsets.only(right: horizontalPadding),
-                child: PopupMenuButton<String>(
-                  onSelected: (value) async {
-                    if (value == 'logout') {
-                      await _authController.signOut();
-                      if (context.mounted) {
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          AppRoutes.welcome,
-                          (route) => false,
-                        );
-                      }
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'logout',
-                      child: Row(
-                        children: [
-                          Icon(Icons.logout, size: 20, color: secondaryText),
-                          const SizedBox(width: 8),
-                          Text('Sign Out', style: AppTextStyles.bodyMedium),
-                        ],
-                      ),
-                    ),
-                  ],
-                  child: Container(
-                    width: isTablet ? 40 : 32,
-                    height: isTablet ? 40 : 32,
-                    decoration: BoxDecoration(
-                      color: lightBg,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: borderColor),
-                    ),
-                    child: Icon(
-                      Icons.person_outline,
-                      size: isTablet ? 22 : 18,
-                      color: primaryText,
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
           body: Column(
             children: [
@@ -116,25 +76,35 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(height: isTablet ? AppSpacing.xxl * 2 : AppSpacing.xl),
+                      SizedBox(
+                        height: isTablet ? AppSpacing.xxl * 2 : AppSpacing.xl,
+                      ),
 
                       // Hero Title
                       Text(
                         'What can I help\nwith?',
                         style: titleFontSize != null
-                            ? AppTextStyles.display.copyWith(fontSize: titleFontSize)
+                            ? AppTextStyles.display.copyWith(
+                                fontSize: titleFontSize,
+                              )
                             : AppTextStyles.display,
                       ),
 
-                      SizedBox(height: isTablet ? AppSpacing.xxl * 2 : AppSpacing.xl),
+                      SizedBox(
+                        height: isTablet ? AppSpacing.xxl * 2 : AppSpacing.xl,
+                      ),
 
                       // Action Grid (Responsive)
                       GridView.count(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         crossAxisCount: gridColumns,
-                        mainAxisSpacing: isTablet ? AppSpacing.lg : AppSpacing.md,
-                        crossAxisSpacing: isTablet ? AppSpacing.lg : AppSpacing.md,
+                        mainAxisSpacing: isTablet
+                            ? AppSpacing.lg
+                            : AppSpacing.md,
+                        crossAxisSpacing: isTablet
+                            ? AppSpacing.lg
+                            : AppSpacing.md,
                         childAspectRatio: isTablet ? 1.1 : 1.0,
                         children: [
                           _ActionCard(
@@ -176,7 +146,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
 
-                      SizedBox(height: isTablet ? AppSpacing.xxl * 2 : AppSpacing.xl),
+                      SizedBox(
+                        height: isTablet ? AppSpacing.xxl * 2 : AppSpacing.xl,
+                      ),
 
                       // Input Bar
                       Container(
@@ -194,8 +166,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             Expanded(
                               child: Text(
                                 'Ask anything...',
-                                style: (isTablet ? AppTextStyles.bodyLarge : AppTextStyles.bodyMedium)
-                                    .copyWith(color: secondaryText),
+                                style:
+                                    (isTablet
+                                            ? AppTextStyles.bodyLarge
+                                            : AppTextStyles.bodyMedium)
+                                        .copyWith(color: secondaryText),
                               ),
                             ),
                             Icon(
@@ -263,8 +238,11 @@ class _ActionCard extends StatelessWidget {
           Flexible(
             child: Text(
               title,
-              style: (isTablet ? AppTextStyles.titleMedium : AppTextStyles.bodyLarge)
-                  .copyWith(fontWeight: FontWeight.w600),
+              style:
+                  (isTablet
+                          ? AppTextStyles.titleMedium
+                          : AppTextStyles.bodyLarge)
+                      .copyWith(fontWeight: FontWeight.w600),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
