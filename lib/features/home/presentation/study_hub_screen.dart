@@ -14,11 +14,17 @@ class StudyHubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
-    final lightBg = isDark ? AppColorsDark.lightBackground : AppColorsLight.lightBackground;
-    final secondaryText = isDark ? AppColorsDark.secondaryText : AppColorsLight.secondaryText;
+    final lightBg = isDark
+        ? AppColorsDark.lightBackground
+        : AppColorsLight.lightBackground;
+    final secondaryText = isDark
+        ? AppColorsDark.secondaryText
+        : AppColorsLight.secondaryText;
 
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
+        leading: const SizedBox(),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         title: Text('Study Hub', style: AppTextStyles.bodyLarge),
@@ -42,11 +48,7 @@ class StudyHubScreen extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.search,
-                      size: 20,
-                      color: secondaryText,
-                    ),
+                    Icon(Icons.search, size: 20, color: secondaryText),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
@@ -65,7 +67,9 @@ class StudyHubScreen extends StatelessWidget {
               // Section 1: Smart Actions
               Text(
                 'Smart Actions',
-                style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+                style: AppTextStyles.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
 
               const SizedBox(height: AppSpacing.lg),
@@ -119,7 +123,9 @@ class StudyHubScreen extends StatelessWidget {
                 children: [
                   Text(
                     'My Notes',
-                    style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   GestureDetector(
                     onTap: () {},
@@ -162,7 +168,9 @@ class StudyHubScreen extends StatelessWidget {
               // Section 3: Practice Zone
               Text(
                 'Practice Zone',
-                style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+                style: AppTextStyles.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
 
               const SizedBox(height: AppSpacing.lg),
@@ -192,7 +200,9 @@ class StudyHubScreen extends StatelessWidget {
               // Section 4: Smart Study Tools
               Text(
                 'Smart Study Tools',
-                style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+                style: AppTextStyles.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
 
               const SizedBox(height: AppSpacing.lg),
