@@ -7,35 +7,56 @@ import 'widgets/smart_action_card.dart';
 import 'widgets/note_list_card.dart';
 import 'widgets/practice_card.dart';
 
+/// StudyHubScreen
+/// --------------
+/// Main hub screen where users:
+/// - Search content
+/// - Access AI tools
+/// - View notes
+/// - Practice MCQs
+/// - Use smart study features
+///
+/// Stateless because:
+/// - No local state is managed here
+/// - All interactions are delegated via callbacks
 class StudyHubScreen extends StatelessWidget {
   const StudyHubScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    /// Detect current theme (light / dark)
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
-    final lightBg = isDark
-        ? AppColorsDark.lightBackground
-        : AppColorsLight.lightBackground;
-    final secondaryText = isDark
-        ? AppColorsDark.secondaryText
-        : AppColorsLight.secondaryText;
+
+    /// Theme-aware colors from centralized design system
+    final borderColor =
+        isDark ? AppColorsDark.border : AppColorsLight.border;
+
+    final lightBg =
+        isDark ? AppColorsDark.lightBackground : AppColorsLight.lightBackground;
+
+    final secondaryText =
+        isDark ? AppColorsDark.secondaryText : AppColorsLight.secondaryText;
 
     return Scaffold(
+      /// Top app bar (no back button, center title)
       appBar: AppBar(
         centerTitle: true,
-        leading: const SizedBox(),
+        leading: const SizedBox(), // removes back arrow
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         title: Text('Study Hub', style: AppTextStyles.bodyLarge),
       ),
+
+      /// Entire screen scrolls vertically
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Search Bar
+              // ─────────────────────────────
+              // SEARCH BAR
+              // ─────────────────────────────
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.lg,
@@ -43,7 +64,7 @@ class StudyHubScreen extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: lightBg,
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(999), // pill shape
                   border: Border.all(color: borderColor),
                 ),
                 child: Row(
@@ -64,7 +85,9 @@ class StudyHubScreen extends StatelessWidget {
 
               const SizedBox(height: AppSpacing.xl),
 
-              // Section 1: Smart Actions
+              // ─────────────────────────────
+              // SECTION 1: SMART ACTIONS
+              // ─────────────────────────────
               Text(
                 'Smart Actions',
                 style: AppTextStyles.bodyLarge.copyWith(
@@ -74,6 +97,7 @@ class StudyHubScreen extends StatelessWidget {
 
               const SizedBox(height: AppSpacing.lg),
 
+              /// Grid of quick-access AI and study actions
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -117,7 +141,9 @@ class StudyHubScreen extends StatelessWidget {
 
               const SizedBox(height: AppSpacing.xxl),
 
-              // Section 2: My Notes
+              // ─────────────────────────────
+              // SECTION 2: MY NOTES
+              // ─────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -141,6 +167,7 @@ class StudyHubScreen extends StatelessWidget {
 
               const SizedBox(height: AppSpacing.lg),
 
+              /// Individual note cards
               NoteListCard(
                 title: 'Physics - Thermodynamics',
                 subtitle: 'Updated 2 days ago',
@@ -157,6 +184,7 @@ class StudyHubScreen extends StatelessWidget {
 
               const SizedBox(height: AppSpacing.md),
 
+              /// Button to generate a new note
               AppOutlinedButton(
                 label: 'Generate New Note',
                 isFullWidth: true,
@@ -165,7 +193,9 @@ class StudyHubScreen extends StatelessWidget {
 
               const SizedBox(height: AppSpacing.xxl),
 
-              // Section 3: Practice Zone
+              // ─────────────────────────────
+              // SECTION 3: PRACTICE ZONE
+              // ─────────────────────────────
               Text(
                 'Practice Zone',
                 style: AppTextStyles.bodyLarge.copyWith(
@@ -175,6 +205,7 @@ class StudyHubScreen extends StatelessWidget {
 
               const SizedBox(height: AppSpacing.lg),
 
+              /// Two-column practice cards
               Row(
                 children: [
                   Expanded(
@@ -197,7 +228,9 @@ class StudyHubScreen extends StatelessWidget {
 
               const SizedBox(height: AppSpacing.xxl),
 
-              // Section 4: Smart Study Tools
+              // ─────────────────────────────
+              // SECTION 4: SMART STUDY TOOLS
+              // ─────────────────────────────
               Text(
                 'Smart Study Tools',
                 style: AppTextStyles.bodyLarge.copyWith(
