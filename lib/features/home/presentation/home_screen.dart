@@ -7,6 +7,8 @@ import '../../../core/widgets/app_card.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
 import '../../../core/responsive/app_breakpoints.dart';
 
+/// HomeScreen is the main dashboard screen after login.
+/// It is RESPONSIVE and adapts for mobile, tablet, and desktop widths.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -15,7 +17,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Step 5: Controller instantiated in State, not UI build
+  /// AuthController is created once when the screen initializes.
+  /// This avoids recreating controllers inside build().
   late final AuthController _authController;
 
   @override
@@ -26,39 +29,47 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    /// Always dispose controllers to avoid memory leaks
     _authController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    /// Detect current theme mode
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    /// Resolve theme-based colors
     final secondaryText = isDark
         ? AppColorsDark.secondaryText
         : AppColorsLight.secondaryText;
+
     final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
+
     final lightBg = isDark
         ? AppColorsDark.lightBackground
         : AppColorsLight.lightBackground;
 
-    // Step 2: Use LayoutBuilder for responsiveness
+    /// LayoutBuilder allows us to respond to screen width
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Step 6: Use centralized breakpoints
         final width = constraints.maxWidth;
+
+        /// Centralized responsive breakpoints
         final isTablet = !AppBreakpoints.isMobile(width); // > 600
         final isLargeTablet = AppBreakpoints.isDesktop(width); // > 900
 
-        // Responsive sizing
+        /// Responsive values
         final horizontalPadding = isTablet ? AppSpacing.xxl * 2 : AppSpacing.lg;
+
         final gridColumns = isLargeTablet ? 4 : (isTablet ? 3 : 2);
+
         final titleFontSize = isLargeTablet ? 56.0 : (isTablet ? 48.0 : null);
 
-        // Step 4: Pure Content Screen (No Navigation Shell)
         return Scaffold(
           appBar: AppBar(
             centerTitle: true,
-            leading: const SizedBox(),
+            leading: const SizedBox(), // removes back button
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             elevation: 0,
             title: Text(
@@ -68,6 +79,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       .copyWith(fontWeight: FontWeight.w800),
             ),
           ),
+
+          /// Main screen body
           body: Column(
             children: [
               Expanded(
@@ -80,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: isTablet ? AppSpacing.xxl * 2 : AppSpacing.xl,
                       ),
 
-                      // Hero Title
+                      /// Hero heading
                       Text(
                         'What can I help\nwith?',
                         style: titleFontSize != null
@@ -94,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: isTablet ? AppSpacing.xxl * 2 : AppSpacing.xl,
                       ),
 
-                      // Action Grid (Responsive)
+                      /// Action cards grid (responsive)
                       GridView.count(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
@@ -150,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: isTablet ? AppSpacing.xxl * 2 : AppSpacing.xl,
                       ),
 
-                      // Input Bar
+                      /// Bottom input bar (chat-style)
                       Container(
                         padding: EdgeInsets.symmetric(
                           horizontal: isTablet ? AppSpacing.xl : AppSpacing.lg,
@@ -193,6 +206,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+/// Individual action card widget used inside the grid.
+/// This widget is PURE UI and receives all colors from parent.
 class _ActionCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -218,9 +233,9 @@ class _ActionCard extends StatelessWidget {
       padding: EdgeInsets.all(isTablet ? AppSpacing.lg : AppSpacing.md),
       onTap: () {},
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          /// Icon container
           Container(
             width: isTablet ? 40 : 32,
             height: isTablet ? 40 : 32,
@@ -234,28 +249,28 @@ class _ActionCard extends StatelessWidget {
               color: Theme.of(context).iconTheme.color,
             ),
           ),
+
           SizedBox(height: isTablet ? AppSpacing.md : AppSpacing.sm),
-          Flexible(
-            child: Text(
-              title,
-              style:
-                  (isTablet
-                          ? AppTextStyles.titleMedium
-                          : AppTextStyles.bodyLarge)
-                      .copyWith(fontWeight: FontWeight.w600),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+
+          /// Card title
+          Text(
+            title,
+            style:
+                (isTablet ? AppTextStyles.titleMedium : AppTextStyles.bodyLarge)
+                    .copyWith(fontWeight: FontWeight.w600),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
+
           SizedBox(height: isTablet ? AppSpacing.xs : 4),
-          Flexible(
-            child: Text(
-              description,
-              style: (isTablet ? AppTextStyles.bodySmall : AppTextStyles.label)
-                  .copyWith(color: secondaryText),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
+
+          /// Card description
+          Text(
+            description,
+            style: (isTablet ? AppTextStyles.bodySmall : AppTextStyles.label)
+                .copyWith(color: secondaryText),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
