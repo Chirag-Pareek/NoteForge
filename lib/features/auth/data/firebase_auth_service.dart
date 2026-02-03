@@ -2,8 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+// Low-level service that talks directly to FirebaseAuth and GoogleSignIn SDKs.
 class FirebaseAuthService {
+  // Firebase Auth singleton instance.
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  // Google Sign-In client used to obtain OAuth credentials.
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   // Get current user
@@ -18,12 +21,14 @@ class FirebaseAuthService {
     required String password,
   }) async {
     try {
+      // Trim email to avoid accidental whitespace issues.
       final userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
       return userCredential;
     } on FirebaseAuthException catch (e) {
+      // Translate Firebase errors to user-friendly messages.
       throw _handleAuthException(e);
     } catch (e) {
       throw Exception('An unexpected error occurred. Please try again.');
@@ -36,12 +41,14 @@ class FirebaseAuthService {
     required String password,
   }) async {
     try {
+      // Trim email to avoid accidental whitespace issues.
       final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
       return userCredential;
     } on FirebaseAuthException catch (e) {
+      // Translate Firebase errors to user-friendly messages.
       throw _handleAuthException(e);
     } catch (e) {
       throw Exception('An unexpected error occurred. Please try again.');
@@ -61,7 +68,7 @@ class FirebaseAuthService {
         // Prepare for a fresh sign in, ignore cleanup errors
         debugPrint('Google clean up failed (benign): $e');
       }
-      
+
       // Trigger the Google Sign In flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
@@ -71,7 +78,8 @@ class FirebaseAuthService {
       }
 
       // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       // Create a new credential
       final credential = GoogleAuthProvider.credential(
@@ -82,6 +90,7 @@ class FirebaseAuthService {
       // Sign in to Firebase with the Google credential
       return await _firebaseAuth.signInWithCredential(credential);
     } on FirebaseAuthException catch (e) {
+      // Translate Firebase errors to user-friendly messages.
       throw _handleAuthException(e);
     } catch (e) {
       // Expose the raw error for debugging
@@ -92,10 +101,8 @@ class FirebaseAuthService {
   // Sign Out
   Future<void> signOut() async {
     try {
-      await Future.wait([
-        _firebaseAuth.signOut(),
-        _googleSignIn.signOut(),
-      ]);
+      // Ensure both Firebase and Google sessions are cleared.
+      await Future.wait([_firebaseAuth.signOut(), _googleSignIn.signOut()]);
     } catch (e) {
       throw Exception('Failed to sign out. Please try again.');
     }
@@ -104,8 +111,10 @@ class FirebaseAuthService {
   // Password Reset
   Future<void> sendPasswordResetEmail(String email) async {
     try {
+      // Trim email to avoid accidental whitespace issues.
       await _firebaseAuth.sendPasswordResetEmail(email: email.trim());
     } on FirebaseAuthException catch (e) {
+      // Translate Firebase errors to user-friendly messages.
       throw _handleAuthException(e);
     } catch (e) {
       throw Exception('Failed to send reset email. Please try again.');
@@ -114,6 +123,7 @@ class FirebaseAuthService {
 
   // Handle Firebase Auth Exceptions
   String _handleAuthException(FirebaseAuthException e) {
+    // Map Firebase error codes to stable, user-facing messages.
     switch (e.code) {
       case 'weak-password':
         return 'Password is too weak. Please use a stronger password.';
