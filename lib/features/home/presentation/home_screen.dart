@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -6,6 +8,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
 import '../../../core/responsive/app_breakpoints.dart';
+import '../../chat/presentation/chat_with_ai_screen.dart';
 
 /// HomeScreen is the main dashboard screen after login.
 /// It is RESPONSIVE and adapts for mobile, tablet, and desktop widths.
@@ -163,35 +166,51 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: isTablet ? AppSpacing.xxl * 2 : AppSpacing.xl,
                       ),
 
-                      /// Bottom input bar (chat-style)
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isTablet ? AppSpacing.xl : AppSpacing.lg,
-                          vertical: isTablet ? AppSpacing.lg : AppSpacing.md,
-                        ),
-                        decoration: BoxDecoration(
-                          color: lightBg,
+                      /// Bottom input bar (chat-style) as a button
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
                           borderRadius: BorderRadius.circular(AppRadius.full),
-                          border: Border.all(color: borderColor),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Ask anything...',
-                                style:
-                                    (isTablet
-                                            ? AppTextStyles.bodyLarge
-                                            : AppTextStyles.bodyMedium)
-                                        .copyWith(color: secondaryText),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const ChatWithAIScreen(),
                               ),
+                            );
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isTablet
+                                  ? AppSpacing.xl
+                                  : AppSpacing.lg,
+                              vertical: isTablet
+                                  ? AppSpacing.lg
+                                  : AppSpacing.md,
                             ),
-                            Icon(
-                              Icons.send_outlined,
-                              size: isTablet ? 24 : 20,
-                              color: secondaryText,
+                            decoration: BoxDecoration(
+                              color: lightBg,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.full,
+                              ),
+                              border: Border.all(color: borderColor),
                             ),
-                          ],
+                            child: Row(
+                              children: [
+                                SizedBox(width: AppRadius.lg),
+                                Expanded(
+                                  child: _TypingHintText(
+                                    isTablet: isTablet,
+                                    color: secondaryText,
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.send_outlined,
+                                  size: isTablet ? 28 : 24,
+                                  color: secondaryText,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -274,6 +293,81 @@ class _ActionCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TypingHintText extends StatefulWidget {
+  final bool isTablet;
+  final Color color;
+
+  const _TypingHintText({required this.isTablet, required this.color});
+
+  @override
+  State<_TypingHintText> createState() => _TypingHintTextState();
+}
+
+class _TypingHintTextState extends State<_TypingHintText> {
+  static const List<String> _phrases = [
+    'Search any topic...',
+    'Research on any topic...',
+    'Ask anything...',
+    'Solve math problem...',
+  ];
+
+  int _phraseIndex = 0;
+  int _charIndex = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTyping();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTyping() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(milliseconds: 70), (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        final phrase = _phrases[_phraseIndex];
+        if (_charIndex < phrase.length) {
+          _charIndex++;
+        } else {
+          _timer?.cancel();
+          Future.delayed(const Duration(milliseconds: 700), () {
+            if (!mounted) {
+              return;
+            }
+            setState(() {
+              _charIndex = 0;
+              _phraseIndex = (_phraseIndex + 1) % _phrases.length;
+            });
+            _startTyping();
+          });
+        }
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final phrase = _phrases[_phraseIndex];
+    final visibleText = phrase.substring(0, _charIndex);
+    return Text(
+      visibleText,
+      textAlign: TextAlign.start,
+      style:
+          (widget.isTablet ? AppTextStyles.bodyLarge : AppTextStyles.bodyMedium)
+              .copyWith(color: widget.color),
     );
   }
 }
