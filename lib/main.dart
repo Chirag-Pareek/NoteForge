@@ -3,9 +3,13 @@ import 'package:firebase_core/firebase_core.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routes/route_generator.dart';
 import 'features/auth/presentation/auth_gate.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables (OpenAI key etc.)
+  await dotenv.load();
 
   // Initialize Firebase safely
   await Firebase.initializeApp();
