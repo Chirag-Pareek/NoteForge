@@ -1,61 +1,47 @@
-import 'dart:convert';
-import 'dart:io';
+// lib/features/chat/presentation/chat_with_ai_screen.dart
 
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/widgets/app_icon_button.dart';
+import '../domain/chat_messages.dart';
 import 'widgets/chat_history_drawer.dart';
-import 'widgets/chat_input_bar.dart';
 import 'widgets/chat_message_bubble.dart';
+import 'widgets/chat_input_bar.dart';
+import '../data/chat_service.dart';
 
-class ChatMessage {
-  final String id;
-  final String text;
-  final bool isUser;
 
-  const ChatMessage({
-    required this.id,
-    required this.text,
-    required this.isUser,
-  });
-}
-
-class ChatThread {
-  final String id;
-  final DateTime date;
-  String title;
-  final List<ChatMessage> messages;
-
-  ChatThread({
-    required this.id,
-    required this.date,
-    required this.title,
-    required this.messages,
-  });
-}
-
-class ChatWithAIScreen extends StatefulWidget {
-  const ChatWithAIScreen({super.key});
+/// Main chat screen with AI assistant
+/// Displays messages, history drawer, and input bar
+class ChatWithAiScreen extends StatefulWidget {
+  const ChatWithAiScreen({super.key});
 
   @override
-  State<ChatWithAIScreen> createState() => _ChatWithAIScreenState();
+  State<ChatWithAiScreen> createState() => _ChatWithAiScreenState();
 }
 
-class _ChatWithAIScreenState extends State<ChatWithAIScreen> {
-  // Chat flow: active thread and message list.
-  final List<ChatThread> _threads = [];
-  ChatThread? _activeThread;
+class _ChatWithAiScreenState extends State<ChatWithAiScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ScrollController _scrollController = ScrollController();
-  final _OpenAIChatService _openAi = _OpenAIChatService();
+  final ChatService _chatService = ChatService();
 
-  String _searchQuery = '';
+  // Current chat state
+  List<ChatMessage> _messages = [];
+  String _currentTopic = 'New Chat';
+  bool _isLoading = false;
+
+  // Chat history state (stored locally in this example)
+  // In production, persist this to local storage or database
+  final List<ChatHistory> _chatHistories = [];
+  String? _activeHistoryId;
 
   @override
   void initState() {
     super.initState();
-    _createNewChat();
+    // Initialize with empty chat
+    _startNewChat();
   }
 
   @override
@@ -64,276 +50,315 @@ class _ChatWithAIScreenState extends State<ChatWithAIScreen> {
     super.dispose();
   }
 
-  void _createNewChat() {
-    final thread = ChatThread(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      date: DateTime.now(),
-      title: 'New Chat',
-      messages: [],
-    );
+  /// Starts a new chat session
+  /// Saves current chat to history if it has messages
+  void _startNewChat() {
     setState(() {
-      _threads.insert(0, thread);
-      _activeThread = thread;
+      // Save current chat to history if it has messages
+      if (_messages.isNotEmpty) {
+        _saveCurrentChatToHistory();
+      }
+
+      // Reset to new chat
+      _messages = [];
+      _currentTopic = 'New Chat';
+      _activeHistoryId = null;
+      _isLoading = false;
     });
   }
 
-  // History handling: loading a chat sets it as active.
-  void _loadChat(ChatHistoryItem item) {
-    final match = _threads.where((t) => t.id == item.id).toList();
-    if (match.isEmpty) {
-      return;
-    }
-    setState(() => _activeThread = match.first);
+  /// Saves current chat session to history
+  void _saveCurrentChatToHistory() {
+    if (_messages.isEmpty) return;
+
+    final historyItem = ChatHistory(
+      id: _activeHistoryId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      topic: _currentTopic,
+      date: DateTime.now(),
+      messages: List.from(_messages),
+    );
+
+    setState(() {
+      // Remove existing if updating
+      _chatHistories.removeWhere((h) => h.id == historyItem.id);
+      // Add to beginning (newest first)
+      _chatHistories.insert(0, historyItem);
+    });
   }
 
-  void _onSendMessage(String text) {
-    final thread = _activeThread;
-    if (thread == null) {
-      return;
-    }
+  /// Loads a chat from history
+  void _loadChatFromHistory(ChatHistory history) {
+    setState(() {
+      // Save current chat before switching
+      if (_messages.isNotEmpty) {
+        _saveCurrentChatToHistory();
+      }
+
+      // Load selected chat
+      _messages = List.from(history.messages);
+      _currentTopic = history.topic;
+      _activeHistoryId = history.id;
+      _isLoading = false;
+    });
+
+    // Close drawer
+    Navigator.of(context).pop();
+
+    // Scroll to bottom after loading
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
+  }
+
+  /// Sends a user message and gets AI response
+  Future<void> _sendMessage(String text) async {
+    if (text.trim().isEmpty) return;
 
     final userMessage = ChatMessage(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
       text: text,
       isUser: true,
     );
 
     setState(() {
-      thread.messages.add(userMessage);
+      _messages.add(userMessage);
+      _isLoading = true;
+
+      // Update topic from first message if still "New Chat"
+      if (_currentTopic == 'New Chat' && text.length > 5) {
+        _currentTopic = text.length > 50 ? '${text.substring(0, 50)}...' : text;
+      }
     });
 
-    // Topic update logic: first user message becomes the chat title.
-    if (thread.title == 'New Chat') {
-      thread.title = text;
-    }
-
+    // Scroll to bottom to show user message
     _scrollToBottom();
 
-    if (!_openAi.isEducationQuery(text)) {
-      _addAssistantMessage(
-        'I am built for study help only. Please ask an education-related question.',
+    try {
+      // Get AI response from ChatGPT API
+      final aiResponse = await _chatService.sendMessage(
+        userMessage: text,
+        conversationHistory: _messages,
       );
-      return;
-    }
 
-    _fetchAiResponse(thread.messages);
-  }
+      final aiMessage = ChatMessage(
+        text: aiResponse,
+        isUser: false,
+      );
 
-  Future<void> _fetchAiResponse(List<ChatMessage> messages) async {
-    // API usage: send chat to OpenAI and append the assistant reply.
-    final reply = await _openAi.createChatCompletion(messages);
-    _addAssistantMessage(reply);
-  }
+      setState(() {
+        _messages.add(aiMessage);
+        _isLoading = false;
+      });
 
-  void _addAssistantMessage(String text) {
-    final thread = _activeThread;
-    if (thread == null) {
-      return;
-    }
-
-    final assistantMessage = ChatMessage(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
-      text: text,
-      isUser: false,
-    );
-
-    setState(() {
-      thread.messages.add(assistantMessage);
-    });
-    _scrollToBottom();
-  }
-
-  void _scrollToBottom() {
-    if (!_scrollController.hasClients) {
-      return;
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) {
+      // Scroll to show AI response
+      _scrollToBottom();
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (!mounted) {
         return;
       }
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
+      // Show error to user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
       );
-    });
+    }
+  }
+
+  /// Scrolls chat to bottom smoothly
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      });
+    }
+  }
+
+  /// Shares current chat (placeholder - implement share functionality)
+  void _shareChat() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Share functionality coming soon')),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
-
-    final activeMessages = _activeThread?.messages ?? const <ChatMessage>[];
 
     return Scaffold(
-      drawer: ChatHistoryDrawer(
-        items: _threads
-            .map(
-              (t) => ChatHistoryItem(
-                id: t.id,
-                title: t.title,
-                date: t.date,
-              ),
-            )
-            .toList(),
-        selectedId: _activeThread?.id,
-        searchQuery: _searchQuery,
-        onSearchChanged: (value) => setState(() => _searchQuery = value),
-        onSelect: _loadChat,
-      ),
+      key: _scaffoldKey,
+      backgroundColor: isDark
+          ? AppColorsDark.background
+          : AppColorsLight.background,
+
+      // Top app bar
       appBar: AppBar(
+        backgroundColor: isDark
+            ? AppColorsDark.background
+            : AppColorsLight.background,
         elevation: 0,
-        leading: Builder(
-          builder: (context) => AppIconButton(
-            icon: Icons.history,
-            onPressed: () => Scaffold.of(context).openDrawer(),
-            tooltip: 'History',
-          ),
+        leading: AppIconButton(
+          icon: Icons.menu,
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        title: Text('Chats', style: AppTextStyles.titleMedium),
-        centerTitle: true,
+        title: Text('Chats', style: AppTextStyles.bodyLarge),
         actions: [
-          AppIconButton(
-            icon: Icons.add_comment_outlined,
-            onPressed: _createNewChat,
-            tooltip: 'New Chat',
-          ),
-          AppIconButton(
-            icon: Icons.share_outlined,
-            onPressed: () {},
-            tooltip: 'Share Chat',
-          ),
+          AppIconButton(icon: Icons.add, onPressed: _startNewChat),
+          AppIconButton(icon: Icons.share_outlined, onPressed: _shareChat),
           const SizedBox(width: AppSpacing.sm),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(AppSpacing.xs),
-          child: Container(
-            height: AppSpacing.xs,
-            color: borderColor,
-          ),
-        ),
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                itemCount: activeMessages.length,
-                itemBuilder: (context, index) {
-                  final message = activeMessages[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                    child: ChatMessageBubble(
-                      text: message.text,
-                      isUser: message.isUser,
-                    ),
-                  );
-                },
-              ),
+
+      // History drawer (left side)
+      drawer: ChatHistoryDrawer(
+        chatHistories: _chatHistories,
+        onChatSelected: _loadChatFromHistory,
+        onDeleteChat: (historyId) {
+          setState(() {
+            _chatHistories.removeWhere((h) => h.id == historyId);
+          });
+        },
+      ),
+
+      // Main chat body
+      body: Column(
+        children: [
+          // Messages list
+          Expanded(
+            child: _messages.isEmpty
+                ? _buildEmptyState(isDark)
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    itemCount: _messages.length + (_isLoading ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      // Show loading indicator at the end
+                      if (index == _messages.length && _isLoading) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.md,
+                          ),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: _buildLoadingBubble(isDark),
+                          ),
+                        );
+                      }
+
+                      final message = _messages[index];
+                      return ChatMessageBubble(
+                        message: message.text,
+                        isUser: message.isUser,
+                      );
+                    },
+                  ),
+          ),
+
+          // Chat input bar at bottom
+          ChatInputBar(onSendMessage: _sendMessage),
+        ],
+      ),
+    );
+  }
+
+  /// Empty state when no messages
+  Widget _buildEmptyState(bool isDark) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.chat_bubble_outline,
+            size: 64,
+            color: isDark ? AppColorsDark.border : AppColorsLight.border,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'Start a conversation',
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: isDark
+                  ? AppColorsDark.secondaryText
+                  : AppColorsLight.secondaryText,
             ),
-            Container(
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: borderColor)),
-              ),
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: ChatInputBar(
-                onSend: _onSendMessage,
-                onAttach: () {},
-                onMic: () {},
-              ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Ask me anything about your studies',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: isDark
+                  ? AppColorsDark.secondaryText
+                  : AppColorsLight.secondaryText,
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Loading bubble while AI is thinking
+  Widget _buildLoadingBubble(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColorsDark.lightBackground
+            : AppColorsLight.lightBackground,
+        border: Border.all(
+          color: isDark ? AppColorsDark.border : AppColorsLight.border,
         ),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isDark
+                    ? AppColorsDark.secondaryText
+                    : AppColorsLight.secondaryText,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Text(
+            'Thinking...',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: isDark
+                  ? AppColorsDark.secondaryText
+                  : AppColorsLight.secondaryText,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _OpenAIChatService {
-  // API configuration for OpenAI Chat Completions.
-  static const String _endpoint = 'https://api.openai.com/v1/chat/completions';
-  static const String _model = 'gpt-4o-mini';
+/// Data model for chat history item
+class ChatHistory {
+  final String id;
+  final String topic;
+  final DateTime date;
+  final List<ChatMessage> messages;
 
-  bool isEducationQuery(String text) {
-    final lower = text.toLowerCase();
-    const keywords = [
-      'study',
-      'explain',
-      'summary',
-      'summarize',
-      'learn',
-      'homework',
-      'math',
-      'science',
-      'physics',
-      'chemistry',
-      'biology',
-      'history',
-      'geography',
-      'grammar',
-      'algebra',
-      'calculus',
-      'formula',
-      'theorem',
-      'problem',
-      'question',
-      'notes',
-    ];
-    return keywords.any(lower.contains);
-  }
-
-  Future<String> createChatCompletion(List<ChatMessage> messages) async {
-    final apiKey = const String.fromEnvironment('OPENAI_API_KEY');
-    if (apiKey.isEmpty) {
-      return 'OpenAI API key is missing. Set OPENAI_API_KEY to enable chat.';
-    }
-
-    final payload = {
-      'model': _model,
-      'messages': [
-        {
-          'role': 'developer',
-          'content':
-              'You are an education-focused AI tutor. Only answer study-related questions.',
-        },
-        ...messages.map(
-          (m) => {
-            'role': m.isUser ? 'user' : 'assistant',
-            'content': m.text,
-          },
-        ),
-      ],
-    };
-
-    final client = HttpClient();
-    try {
-      final request = await client.postUrl(Uri.parse(_endpoint));
-      request.headers.set('Content-Type', 'application/json');
-      request.headers.set('Authorization', 'Bearer $apiKey');
-      request.add(utf8.encode(jsonEncode(payload)));
-
-      final response = await request.close();
-      final body = await response.transform(utf8.decoder).join();
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final data = jsonDecode(body) as Map<String, dynamic>;
-        final choices = data['choices'] as List<dynamic>;
-        if (choices.isNotEmpty) {
-          final message = choices.first['message'] as Map<String, dynamic>;
-          final content = message['content'] as String?;
-          return content ?? 'No response returned.';
-        }
-        return 'No response returned.';
-      }
-
-      return 'Request failed. Please try again.';
-    } catch (_) {
-      return 'Network error. Please try again.';
-    } finally {
-      client.close();
-    }
-  }
+  ChatHistory({
+    required this.id,
+    required this.topic,
+    required this.date,
+    required this.messages,
+  });
 }
