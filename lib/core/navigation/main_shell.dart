@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:noteforge/features/home/presentation/profile_screen.dart';
 import 'package:noteforge/features/home/presentation/study_hub_screen.dart';
 import 'package:noteforge/features/community/presentation/community_home_screen.dart';
+import 'package:noteforge/features/progress/presentation/progress_home_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 // import '../theme/app_text_styles.dart';
@@ -111,7 +112,7 @@ class _MainShellState extends State<MainShell> {
       const HomeScreen(),
       const StudyHubScreen(),
       const CommunityHomeScreen(),
-      const Scaffold(body: Center(child: Text('Progress'))),
+      const ProgressHomeScreen(),
       const ProfileScreen(),
     ];
   }
