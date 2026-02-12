@@ -1,11 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/routes/app_routes.dart';
+import 'controllers/profile_controller.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_stat_card.dart';
 import 'widgets/profile_option_tile.dart';
@@ -19,8 +20,7 @@ import 'widgets/profile_option_tile.dart';
 /// - Profile-related actions (edit, logout, etc.)
 ///
 /// Data source:
-/// - Firebase Auth → current user UID
-/// - Firestore → users/{uid}
+/// - ProfileController (Firebase-backed realtime profile state)
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -29,54 +29,35 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  /// Firebase Authentication instance
+  /// Firebase Authentication instance (used for logout).
   final _auth = FirebaseAuth.instance;
 
-  /// Firestore instance
-  final _firestore = FirebaseFirestore.instance;
-
-  /// Cached user document data from Firestore
-  Map<String, dynamic>? _userData;
-
-  /// Loading flag while fetching Firestore data
-  bool _isLoading = true;
+  ProfileController? _profileController;
 
   @override
   void initState() {
     super.initState();
-    // Load user data as soon as the screen is created
-    _loadUserData();
+
+    // Connect this screen to backend profile state when the widget is ready.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final controller = context.read<ProfileController>();
+      _profileController = controller;
+
+      // Load once, then continue listening for realtime Firestore changes.
+      controller.loadProfile();
+      controller.startProfileListener();
+    });
   }
 
-  /// Fetch user profile data from Firestore
-  Future<void> _loadUserData() async {
-    try {
-      // Get currently logged-in user's UID
-      final uid = _auth.currentUser!.uid;
-
-      // Fetch Firestore document for this user
-      final doc = await _firestore.collection('users').doc(uid).get();
-
-      if (!mounted) return;
-
-      // Store user data and stop loading state
-      setState(() {
-        _userData = doc.data();
-        _isLoading = false;
-      });
-    } catch (e) {
-      // In case of error, stop loading to avoid infinite spinner
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
-    }
+  @override
+  void dispose() {
+    _profileController?.stopProfileListener();
+    super.dispose();
   }
 
-  /// Handle user logout with confirmation dialog
+  /// Handle user logout with confirmation dialog.
   Future<void> _handleLogout() async {
-    // Ask user for confirmation before logging out
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -86,13 +67,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: AppTextStyles.bodyMedium,
         ),
         actions: [
-          // Cancel logout
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text('Cancel', style: AppTextStyles.bodyMedium),
           ),
-
-          // Confirm logout
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
@@ -106,13 +84,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
 
-    // If user confirmed logout
     if (shouldLogout == true) {
       await _auth.signOut();
 
       if (!mounted) return;
 
-      // Navigate to login screen and remove all previous routes
       Navigator.pushNamedAndRemoveUntil(
         context,
         AppRoutes.login,
@@ -123,34 +99,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<ProfileController>();
+
     /// Theme-aware border color
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor =
-        isDark ? AppColorsDark.border : AppColorsLight.border;
+    final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
 
-    /// Loading UI while Firestore data is being fetched
-    if (_isLoading) {
+    /// Loading UI while profile data is being fetched.
+    if (controller.isLoading) {
       return Scaffold(
         appBar: AppBar(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           elevation: 0,
           title: Text('Profile', style: AppTextStyles.bodyLarge),
         ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
-    /// Extract user fields with fallbacks
-    final username = _userData?['username'] ?? 'User';
-    final bio =
-        _userData?['bio'] ??
-        'Class 12 • Science Stream\nAspiring Engineer';
-    final streak = _userData?['streak'] ?? 7;
-    final tests = _userData?['tests'] ?? 24;
-    final wins = _userData?['wins'] ?? 12;
-    final photoUrl = _userData?['photoUrl'];
+    // Replace hardcoded profile header values with controller-backed data.
+    final profile = controller.profile;
+    final username = (profile?.username.isNotEmpty ?? false)
+        ? profile!.username
+        : 'User';
+
+    final rawBio = profile?.bio ?? '';
+    final rawSchool = profile?.school ?? '';
+    final rawGrade = profile?.grade ?? '';
+
+    String bio = rawBio.trim();
+    if (bio.isEmpty) {
+      final schoolGrade = <String>[
+        if (rawGrade.trim().isNotEmpty) rawGrade.trim(),
+        if (rawSchool.trim().isNotEmpty) rawSchool.trim(),
+      ];
+      bio = schoolGrade.isEmpty ? 'No bio added yet' : schoolGrade.join(' - ');
+    }
+
+    final photoUrl = (profile?.photoUrl.isNotEmpty ?? false)
+        ? profile!.photoUrl
+        : null;
+
+    // Existing stat cards remain unchanged since they are not part of ProfileModel.
+    const streak = 7;
+    const tests = 24;
+    const wins = 12;
 
     return Scaffold(
       appBar: AppBar(
@@ -160,10 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         // More options icon (currently unused)
         actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {},
-          ),
+          IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
         ],
       ),
       body: SingleChildScrollView(
@@ -172,11 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // =====================
             // Profile Header Section
             // =====================
-            ProfileHeader(
-              photoUrl: photoUrl,
-              username: username,
-              bio: bio,
-            ),
+            ProfileHeader(photoUrl: photoUrl, username: username, bio: bio),
 
             const SizedBox(height: AppSpacing.xl),
 
@@ -184,23 +170,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Stats Row (Streak, Tests, Wins)
             // =====================
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  ProfileStatCard(
-                    value: '$streak 🔥',
-                    label: 'Streak',
-                  ),
-                  ProfileStatCard(
-                    value: '$tests',
-                    label: 'Tests',
-                  ),
-                  ProfileStatCard(
-                    value: '$wins',
-                    label: 'Wins',
-                  ),
+                  ProfileStatCard(value: '$streak', label: 'Streak'),
+                  ProfileStatCard(value: '$tests', label: 'Tests'),
+                  ProfileStatCard(value: '$wins', label: 'Wins'),
                 ],
               ),
             ),
@@ -211,12 +187,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Profile Options Menu
             // =====================
             Container(
-              margin:
-                  const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: borderColor),
-                ),
+                border: Border(top: BorderSide(color: borderColor)),
               ),
               child: Column(
                 children: [
@@ -225,10 +198,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.person_outline,
                     title: 'Edit Profile',
                     onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        AppRoutes.profilEdit,
-                      );
+                      Navigator.pushNamed(context, AppRoutes.profilEdit);
                     },
                   ),
 
