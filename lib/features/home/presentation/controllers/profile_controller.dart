@@ -1,8 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 
-import '../../data/profile_repository.dart';
+import '../../data/profile_service.dart';
 import '../../domain/profile_model.dart';
 
 /// Controller for profile state and edit operations.
@@ -12,12 +13,12 @@ import '../../domain/profile_model.dart';
 /// - profile update operations
 /// - loading / saving / error states
 class ProfileController extends ChangeNotifier {
-  ProfileController({ProfileRepository? repository})
-    : _repository = repository ?? ProfileRepository();
+  ProfileController({ProfileService? service})
+    : _service = service ?? ProfileService();
 
-  final ProfileRepository _repository;
+  final ProfileService _service;
 
-  StreamSubscription<ProfileModel?>? _profileSub;
+  StreamSubscription<ProfileModel?>? _profileSubscription;
 
   ProfileModel? _profile;
   bool _isLoading = false;
@@ -29,86 +30,108 @@ class ProfileController extends ChangeNotifier {
   bool get isSaving => _isSaving;
   String? get errorMessage => _errorMessage;
 
-  /// Begins realtime profile listening for [uid].
-  Future<void> startProfileListener(String uid) async {
+  /// Begins realtime profile listening for the currently authenticated user.
+  Future<void> startProfileListener() async {
+    await stopProfileListener();
     _setLoading(true);
     _clearError(notify: false);
 
-    await _profileSub?.cancel();
-    _profileSub = _repository
-        .streamProfile(uid)
-        .listen(
-          (profile) {
-            _profile = profile;
-            _setLoading(false);
-          },
-          onError: (Object error) {
-            _setError(error.toString());
-          },
-        );
+    try {
+      _profileSubscription = _service.watchProfile().listen(
+        (profile) {
+          _profile = profile;
+          _isLoading = false;
+          notifyListeners();
+        },
+        onError: (Object error) {
+          _isLoading = false;
+          _setError(_messageFromError(error));
+        },
+      );
+    } on ProfileException catch (e) {
+      _isLoading = false;
+      _setError(e.message);
+    } catch (_) {
+      _isLoading = false;
+      _setError('Failed to start profile updates. Please try again.');
+    }
   }
 
   /// Stops realtime listener to avoid leaks when screen/view-model is disposed.
   Future<void> stopProfileListener() async {
-    await _profileSub?.cancel();
-    _profileSub = null;
+    await _profileSubscription?.cancel();
+    _profileSubscription = null;
   }
 
-  /// One-time fetch for fresh profile data.
-  Future<void> loadProfile(String uid) async {
+  /// One-time profile fetch for the currently authenticated user.
+  Future<void> loadProfile() async {
     _setLoading(true);
     _clearError(notify: false);
+
     try {
-      _profile = await _repository.getProfile(uid);
+      _profile = await _service.fetchProfile();
       _setLoading(false);
-    } catch (e) {
-      _setError(e.toString());
+    } on ProfileException catch (e) {
+      _setError(e.message);
+    } catch (_) {
+      _setError('Failed to load profile. Please try again.');
     }
   }
 
-  /// Updates editable profile fields.
+  /// Updates editable profile fields and optional profile photo.
   Future<bool> updateProfile({
-    required String uid,
     String? displayName,
-    String? username,
-    String? classOrField,
-    String? email,
-    Uint8List? profileImageBytes,
-    String imageFileExtension = 'jpg',
-    String? imageContentType,
-    Map<String, dynamic> additionalFields = const <String, dynamic>{},
+    required String username,
+    required String bio,
+    required String school,
+    required String grade,
+    XFile? photoFile,
   }) async {
     _setSaving(true);
     _clearError(notify: false);
 
     try {
-      await _repository.updateProfile(
-        uid: uid,
+      await _service.updateProfile(
         displayName: displayName,
         username: username,
-        classOrField: classOrField,
-        email: email,
-        profileImageBytes: profileImageBytes,
-        imageFileExtension: imageFileExtension,
-        imageContentType: imageContentType,
-        additionalFields: additionalFields,
+        bio: bio,
+        school: school,
+        grade: grade,
+        photoFile: photoFile,
       );
 
+      _profile = await _service.fetchProfile();
       _setSaving(false);
+      notifyListeners();
       return true;
+    } on ProfileException catch (e) {
+      _setError(e.message);
+      _setSaving(false);
+      return false;
     } catch (e) {
-      _setError(e.toString());
+      _setError('Failed to update profile. Please try again.');
       _setSaving(false);
       return false;
     }
   }
 
-  /// Checks username availability (useful before submission).
-  Future<bool> isUsernameAvailable(String username, {String? currentUid}) {
-    return _repository.isUsernameAvailable(
-      username: username,
-      excludingUid: currentUid,
-    );
+  /// Validates username uniqueness using case-insensitive matching.
+  Future<bool> validateUsername(String username) async {
+    try {
+      final uid = _profile?.uid ?? _service.currentUid;
+      await _service.validateUniqueUsername(
+        username: username,
+        currentUid: uid,
+      );
+      _clearError(notify: true);
+      return true;
+    } on ProfileException catch (e) {
+      _setError(e.message);
+      return false;
+    } catch (_) {
+      _setError('Could not validate username. Please try again.');
+      return false;
+    }
   }
 
   void clearError() {
@@ -131,6 +154,13 @@ class ProfileController extends ChangeNotifier {
     notifyListeners();
   }
 
+  String _messageFromError(Object error) {
+    if (error is ProfileException) {
+      return error.message;
+    }
+    return 'Profile updates failed. Please try again.';
+  }
+
   void _clearError({required bool notify}) {
     _errorMessage = null;
     if (notify) {
@@ -140,7 +170,7 @@ class ProfileController extends ChangeNotifier {
 
   @override
   void dispose() {
-    _profileSub?.cancel();
+    _profileSubscription?.cancel();
     super.dispose();
   }
 }
