@@ -5,150 +5,83 @@ class ProfileModel {
   final String uid;
   final String displayName;
   final String username;
-  final String classOrField;
-  final String email;
-  final String? photoUrl;
-  final int streak;
-  final double performanceScore;
-  final DateTime? createdAt;
+  final String bio;
+  final String school;
+  final String grade;
+  final String photoUrl;
   final DateTime? updatedAt;
-
-  /// Optional extra profile fields not part of the fixed schema.
-  final Map<String, dynamic> extras;
 
   const ProfileModel({
     required this.uid,
     required this.displayName,
     required this.username,
-    required this.classOrField,
-    required this.email,
+    required this.bio,
+    required this.school,
+    required this.grade,
     required this.photoUrl,
-    required this.streak,
-    required this.performanceScore,
-    required this.createdAt,
     required this.updatedAt,
-    this.extras = const <String, dynamic>{},
   });
 
   ProfileModel copyWith({
     String? uid,
     String? displayName,
     String? username,
-    String? classOrField,
-    String? email,
+    String? bio,
+    String? school,
+    String? grade,
     String? photoUrl,
-    bool clearPhotoUrl = false,
-    int? streak,
-    double? performanceScore,
-    DateTime? createdAt,
     DateTime? updatedAt,
-    Map<String, dynamic>? extras,
   }) {
     return ProfileModel(
       uid: uid ?? this.uid,
       displayName: displayName ?? this.displayName,
       username: username ?? this.username,
-      classOrField: classOrField ?? this.classOrField,
-      email: email ?? this.email,
-      photoUrl: clearPhotoUrl ? null : (photoUrl ?? this.photoUrl),
-      streak: streak ?? this.streak,
-      performanceScore: performanceScore ?? this.performanceScore,
-      createdAt: createdAt ?? this.createdAt,
+      bio: bio ?? this.bio,
+      school: school ?? this.school,
+      grade: grade ?? this.grade,
+      photoUrl: photoUrl ?? this.photoUrl,
       updatedAt: updatedAt ?? this.updatedAt,
-      extras: extras ?? this.extras,
     );
   }
 
-  Map<String, dynamic> toMap({
-    bool includeTimestamps = true,
-    bool includeStats = true,
-  }) {
-    final map = <String, dynamic>{
+  /// Converts this profile into a Firestore-friendly JSON map.
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
       'displayName': displayName,
       'username': username,
-      'classOrField': classOrField,
-      'email': email,
+      'bio': bio,
+      'school': school,
+      'grade': grade,
       'photoUrl': photoUrl,
-      ...extras,
+      'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
     };
-
-    if (includeStats) {
-      map['streak'] = streak;
-      map['performanceScore'] = performanceScore;
-    }
-
-    if (includeTimestamps) {
-      map['updatedAt'] = FieldValue.serverTimestamp();
-    }
-
-    return map;
   }
 
-  factory ProfileModel.fromDocument(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
-    final data = doc.data() ?? <String, dynamic>{};
-    final fixedKeys = <String>{
-      'displayName',
-      'username',
-      'classOrField',
-      'email',
-      'photoUrl',
-      'streak',
-      'performanceScore',
-      'createdAt',
-      'updatedAt',
-    };
-
-    final extras = <String, dynamic>{};
-    for (final entry in data.entries) {
-      if (!fixedKeys.contains(entry.key)) {
-        extras[entry.key] = entry.value;
-      }
-    }
-
+  /// Builds a [ProfileModel] from Firestore JSON.
+  factory ProfileModel.fromJson(String uid, Map<String, dynamic> json) {
     return ProfileModel(
-      uid: doc.id,
-      displayName: (data['displayName'] as String?) ?? '',
-      username: (data['username'] as String?) ?? '',
-      classOrField: (data['classOrField'] as String?) ?? '',
-      email: (data['email'] as String?) ?? '',
-      photoUrl: data['photoUrl'] as String?,
-      streak: _toInt(data['streak']),
-      performanceScore: _toDouble(data['performanceScore']),
-      createdAt: _toDateTime(data['createdAt']),
-      updatedAt: _toDateTime(data['updatedAt']),
-      extras: extras,
+      uid: uid,
+      displayName: (json['displayName'] as String?) ?? '',
+      username: (json['username'] as String?) ?? '',
+      bio: (json['bio'] as String?) ?? '',
+      school: (json['school'] as String?) ?? '',
+      grade: (json['grade'] as String?) ?? '',
+      photoUrl: (json['photoUrl'] as String?) ?? '',
+      updatedAt: _toDateTime(json['updatedAt']),
     );
   }
 
+  /// Normalizes usernames for case-insensitive uniqueness checks.
   static String normalizeUsername(String username) {
     return username.trim().toLowerCase();
-  }
-
-  static int _toInt(dynamic value) {
-    if (value is int) {
-      return value;
-    }
-    if (value is num) {
-      return value.toInt();
-    }
-    return 0;
-  }
-
-  static double _toDouble(dynamic value) {
-    if (value is double) {
-      return value;
-    }
-    if (value is num) {
-      return value.toDouble();
-    }
-    return 0.0;
   }
 
   static DateTime? _toDateTime(dynamic value) {
     if (value is Timestamp) {
       return value.toDate();
+    }
+    if (value is DateTime) {
+      return value;
     }
     return null;
   }
