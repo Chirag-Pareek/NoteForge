@@ -23,7 +23,7 @@ class ProfileRepository {
       if (!doc.exists) {
         return null;
       }
-      return ProfileModel.fromDocument(doc);
+      return ProfileModel.fromJson(doc.id, doc.data() ?? <String, dynamic>{});
     });
   }
 
@@ -34,7 +34,7 @@ class ProfileRepository {
       if (!doc.exists) {
         return null;
       }
-      return ProfileModel.fromDocument(doc);
+      return ProfileModel.fromJson(doc.id, doc.data() ?? <String, dynamic>{});
     } on FirebaseException catch (e) {
       throw Exception('Failed to fetch profile: ${e.message ?? e.code}');
     }
