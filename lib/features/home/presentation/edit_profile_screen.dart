@@ -1,23 +1,23 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../domain/profile_model.dart';
+import 'controllers/profile_controller.dart';
 
 /// EditProfileScreen
 /// ------------------
 /// Screen that allows the user to:
-/// - View existing profile data from Firestore
+/// - View existing profile data from backend via ProfileController
 /// - Edit username, bio, school, and grade
-/// - Save updated data back to Firestore
-///
-/// Data source:
-/// - Firebase Authentication → current user UID
-/// - Cloud Firestore → users/{uid}
+/// - Save updated data through profile controller/service
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
 
@@ -26,35 +26,34 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  /// Firebase Auth instance (used to get current user UID)
-  final _auth = FirebaseAuth.instance;
-
-  /// Firestore instance (used to read/write user profile)
-  final _firestore = FirebaseFirestore.instance;
-
-  /// Controllers for editable text fields
+  /// Controllers for editable text fields.
   final _usernameController = TextEditingController();
   final _bioController = TextEditingController();
   final _schoolController = TextEditingController();
   final _gradeController = TextEditingController();
 
-  /// UI state flags
-  bool _isLoading = true; // while fetching user data
+  /// UI state flags.
+  bool _isLoading = true; // while fetching profile data
   bool _isSaving = false; // while saving profile changes
 
-  /// Optional profile photo URL from Firestore
+  /// Existing remote photo URL from profile data.
   String? _photoUrl;
+
+  /// Newly selected photo to upload (optional).
+  XFile? _selectedPhoto;
+  Uint8List? _selectedPhotoBytes;
 
   @override
   void initState() {
     super.initState();
-    // Load existing user data when screen opens
-    _loadUserData();
+    // Load and prefill form with current profile values.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserData();
+    });
   }
 
   @override
   void dispose() {
-    // Dispose all controllers to avoid memory leaks
     _usernameController.dispose();
     _bioController.dispose();
     _schoolController.dispose();
@@ -62,112 +61,121 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  /// Fetch user profile data from Firestore
+  /// Fetches profile from controller and pre-fills form fields.
   Future<void> _loadUserData() async {
+    final controller = context.read<ProfileController>();
+
     try {
-      // Get current logged-in user's UID
-      final uid = _auth.currentUser!.uid;
-
-      // Fetch user document from Firestore
-      final doc = await _firestore.collection('users').doc(uid).get();
-
-      if (!mounted) return;
-
-      final data = doc.data();
-
-      // Populate text fields with Firestore values
-      if (data != null) {
-        _usernameController.text = data['username'] ?? '';
-        _bioController.text = data['bio'] ?? '';
-        _schoolController.text = data['school'] ?? '';
-        _gradeController.text = data['grade'] ?? '';
-        _photoUrl = data['photoUrl'];
+      if (controller.profile == null) {
+        await controller.loadProfile();
       }
 
-      // Stop loading spinner
-      setState(() {
-        _isLoading = false;
-      });
-    } catch (e) {
-      // Even if error occurs, stop loading UI
       if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  /// Save updated profile data to Firestore
-  Future<void> _saveProfile() async {
-    // Basic validation
-    if (_usernameController.text.trim().isEmpty) {
-      _showSnackBar('Username cannot be empty');
-      return;
-    }
-
-    setState(() {
-      _isSaving = true;
-    });
-
-    try {
-      final uid = _auth.currentUser!.uid;
-
-      // Update Firestore document
-      await _firestore.collection('users').doc(uid).update({
-        'username': _usernameController.text.trim(),
-        'bio': _bioController.text.trim(),
-        'school': _schoolController.text.trim(),
-        'grade': _gradeController.text.trim(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      if (!mounted) return;
-
-      // Show success feedback
-      _showSnackBar('Profile updated successfully');
-
-      // Close Edit Profile screen
-      Navigator.pop(context);
-    } catch (e) {
-      if (!mounted) return;
-
-      // Show failure feedback
-      _showSnackBar('Failed to update profile');
+      final profile = controller.profile;
+      if (profile != null) {
+        _applyProfileToFields(profile);
+      }
     } finally {
       if (mounted) {
         setState(() {
-          _isSaving = false;
+          _isLoading = false;
         });
       }
     }
   }
 
-  /// Simple SnackBar helper
+  /// Maps [ProfileModel] data into text field controllers.
+  void _applyProfileToFields(ProfileModel profile) {
+    _usernameController.text = profile.username;
+    _bioController.text = profile.bio;
+    _schoolController.text = profile.school;
+    _gradeController.text = profile.grade;
+    _photoUrl = profile.photoUrl.isEmpty ? null : profile.photoUrl;
+  }
+
+  /// Save updated profile data through the profile controller.
+  Future<void> _saveProfile() async {
+    if (_usernameController.text.trim().isEmpty) {
+      _showSnackBar('Username cannot be empty');
+      return;
+    }
+
+    final controller = context.read<ProfileController>();
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    final success = await controller.updateProfile(
+      displayName: controller.profile?.displayName,
+      username: _usernameController.text.trim(),
+      bio: _bioController.text.trim(),
+      school: _schoolController.text.trim(),
+      grade: _gradeController.text.trim(),
+      photoFile: _selectedPhoto,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      _showSnackBar('Profile updated successfully');
+      Navigator.pop(context);
+      return;
+    } else {
+      _showSnackBar(controller.errorMessage ?? 'Failed to update profile');
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isSaving = false;
+    });
+  }
+
+  /// Simple SnackBar helper.
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 
-  /// Placeholder for future photo upload feature
-  void _handleChangePhoto() {
-    _showSnackBar('Photo upload feature coming soon');
+  /// Picks a new profile image from gallery for upload on save.
+  Future<void> _handleChangePhoto() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1440,
+      );
+
+      if (pickedFile == null || !mounted) return;
+
+      final bytes = await pickedFile.readAsBytes();
+
+      if (!mounted) return;
+
+      setState(() {
+        _selectedPhoto = pickedFile;
+        _selectedPhotoBytes = bytes;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      _showSnackBar('Could not select photo');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     /// Theme-aware colors
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor =
-        isDark ? AppColorsDark.border : AppColorsLight.border;
-    final lightBg =
-        isDark ? AppColorsDark.lightBackground : AppColorsLight.lightBackground;
-    final primaryText =
-        isDark ? AppColorsDark.primaryText : AppColorsLight.primaryText;
+    final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
+    final lightBg = isDark
+        ? AppColorsDark.lightBackground
+        : AppColorsLight.lightBackground;
+    final primaryText = isDark
+        ? AppColorsDark.primaryText
+        : AppColorsLight.primaryText;
 
     return Scaffold(
       appBar: AppBar(
@@ -218,7 +226,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: borderColor, width: 2),
                     ),
-                    child: _photoUrl != null
+                    child: _selectedPhotoBytes != null
+                        ? ClipOval(
+                            child: Image.memory(
+                              _selectedPhotoBytes!,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : (_photoUrl != null && _photoUrl!.isNotEmpty)
                         ? ClipOval(
                             child: Image.network(
                               _photoUrl!,
@@ -237,9 +252,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         : Icon(
                             Icons.person,
                             size: 48,
-                            color: primaryText.withAlpha(
-                              (0.5 * 255).toInt(),
-                            ),
+                            color: primaryText.withAlpha((0.5 * 255).toInt()),
                           ),
                   ),
 
@@ -299,7 +312,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  /// Small helper widget to avoid repeated label + field code
+  /// Small helper widget to avoid repeated label + field code.
   Widget _buildLabeledField({
     required String label,
     required TextEditingController controller,
