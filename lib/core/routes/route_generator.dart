@@ -10,6 +10,11 @@ import 'app_routes.dart';
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
+
+      // 🔥 ROOT ROUTE (FIXES YOUR ERROR)
+      case '/':
+        return MaterialPageRoute(builder: (_) => const WelcomeScreen());
+
       case AppRoutes.welcome:
         return MaterialPageRoute(builder: (_) => const WelcomeScreen());
 
@@ -31,7 +36,9 @@ class RouteGenerator {
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
-            body: Center(child: Text('No route defined for ${settings.name}')),
+            body: Center(
+              child: Text('No route defined for ${settings.name}'),
+            ),
           ),
         );
     }
