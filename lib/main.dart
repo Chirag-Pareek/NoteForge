@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routes/route_generator.dart';
 import 'features/auth/presentation/auth_gate.dart';
+import 'features/home/presentation/controllers/profile_controller.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
@@ -14,7 +16,14 @@ void main() async {
   // Initialize Firebase safely
   await Firebase.initializeApp();
 
-  runApp(const MyApp());
+  // Provide profile controller globally so profile and edit profile screens
+  // can share realtime profile state and update actions.
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ProfileController(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
