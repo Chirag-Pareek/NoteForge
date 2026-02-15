@@ -1,0 +1,62 @@
+﻿Analyzing noteforge...                                          
+
+warning - Unnecessary cast - lib\features\books\data\books_repository.dart:58:9 - unnecessary_cast
+   info - Unnecessary use of multiple underscores - lib\features\books\presentation\books_screen.dart:92:35 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\books\presentation\books_screen.dart:121:58 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\books\presentation\books_screen.dart:173:22 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\books\presentation\books_screen.dart:178:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\books\presentation\books_screen.dart:179:35 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\books\presentation\books_screen.dart:213:5 - use_build_context_synchronously
+warning - Unnecessary cast - lib\features\notes\data\notes_repository.dart:44:9 - unnecessary_cast
+warning - Unnecessary cast - lib\features\notes\data\notes_repository.dart:100:9 - unnecessary_cast
+warning - Unnecessary cast - lib\features\notes\data\notes_repository.dart:159:9 - unnecessary_cast
+warning - Unnecessary cast - lib\features\notes\data\notes_repository.dart:218:9 - unnecessary_cast
+   info - Unnecessary use of multiple underscores - lib\features\notes\presentation\chapters_screen.dart:83:35 - unnecessary_underscores
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\notes\presentation\chapters_screen.dart:161:7 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\notes\presentation\chapters_screen.dart:190:19 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\notes\presentation\chapters_screen.dart:212:19 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\notes\presentation\note_editor_screen.dart:140:44 - use_build_context_synchronously
+   info - Unnecessary use of multiple underscores - lib\features\notes\presentation\notes_list_screen.dart:86:35 - unnecessary_underscores
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\notes\presentation\notes_list_screen.dart:206:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\notes\presentation\notes_list_screen.dart:246:15 - use_build_context_synchronously
+   info - Unnecessary use of multiple underscores - lib\features\notes\presentation\subjects_screen.dart:79:35 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\notes\presentation\subjects_screen.dart:109:41 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\notes\presentation\subjects_screen.dart:157:7 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\notes\presentation\subjects_screen.dart:187:19 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\notes\presentation\subjects_screen.dart:210:19 - use_build_context_synchronously
+   info - Unnecessary use of multiple underscores - lib\features\notes\presentation\topics_screen.dart:84:35 - unnecessary_underscores
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\notes\presentation\topics_screen.dart:153:7 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\notes\presentation\topics_screen.dart:184:19 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\notes\presentation\topics_screen.dart:204:19 - use_build_context_synchronously
+warning - Unnecessary cast - lib\features\practice\data\practice_repository.dart:93:9 - unnecessary_cast
+   info - Unnecessary use of multiple underscores - lib\features\practice\presentation\practice_chapters_screen.dart:66:35 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\practice\presentation\practice_history_screen.dart:46:35 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\practice\presentation\practice_history_screen.dart:72:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\practice\presentation\practice_results_screen.dart:66:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\practice\presentation\practice_results_screen.dart:141:62 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\practice\presentation\practice_results_screen.dart:143:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\practice\presentation\practice_select_screen.dart:146:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\practice\presentation\practice_session_screen.dart:175:44 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\practice\presentation\practice_session_screen.dart:250:33 - use_build_context_synchronously
+warning - Unnecessary cast - lib\features\study_plan\data\study_plan_repository.dart:49:11 - unnecessary_cast
+   info - The parameter name 'sum' matches a visible type name - lib\features\study_plan\domain\study_plan_model.dart:112:27 - avoid_types_as_parameter_names
+   info - The parameter name 'sum' matches a visible type name - lib\features\study_plan\domain\study_plan_model.dart:116:22 - avoid_types_as_parameter_names
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\study_plan\presentation\study_plan_screen.dart:70:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\study_plan\presentation\study_plan_screen.dart:379:24 - deprecated_member_use
+
+flutter : 43 issues found. 
+(ran in 6.5s)
+At line:1 char:1
++ flutter analyze --no-pub 
+2>&1 | Out-File -FilePath 
+C:\Allprojects\not ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~
+    + CategoryInfo         
+     : NotSpecified: (43   
+  issues found. (ran in    
+ 6.5s):String) [], Remo    
+teException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 

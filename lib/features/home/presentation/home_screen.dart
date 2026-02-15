@@ -23,22 +23,92 @@ class _HomeScreenState extends State<HomeScreen> {
   /// AuthController is created once when the screen initializes.
   /// This avoids recreating controllers inside build().
   late final AuthController _authController;
+  late final TextEditingController _chatInputController;
+  bool _showChatScreen = false;
+  bool _autoFocusChatInput = false;
+
+  static const Map<String, String> _actionCardPrompts = {
+    'Notes':
+        'Create detailed structured study notes with headings, examples and key points on: ',
+    'MCQs': 'Generate MCQs with answers and explanations for the topic: ',
+    'Planner': 'Create a smart daily study plan and revision strategy for: ',
+    'Summaries':
+        'Summarize this topic clearly with important concepts and short points: ',
+  };
 
   @override
   void initState() {
     super.initState();
     _authController = AuthController();
+    _chatInputController = TextEditingController();
   }
 
   @override
   void dispose() {
     /// Always dispose controllers to avoid memory leaks
+    _chatInputController.dispose();
     _authController.dispose();
     super.dispose();
   }
 
+  void _openChatScreen({String? prefillText, bool autoFocusInput = false}) {
+    if (prefillText != null) {
+      _chatInputController.value = TextEditingValue(
+        text: prefillText,
+        selection: TextSelection.collapsed(offset: prefillText.length),
+      );
+    }
+
+    setState(() {
+      _autoFocusChatInput = autoFocusInput;
+      _showChatScreen = true;
+    });
+  }
+
+  void _closeChatScreen() {
+    setState(() {
+      _showChatScreen = false;
+      _autoFocusChatInput = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    return PopScope(
+      canPop: !_showChatScreen,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || !_showChatScreen) {
+          return;
+        }
+        _closeChatScreen();
+      },
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 320),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, animation) {
+          final slideAnimation = Tween<Offset>(
+            begin: const Offset(0.08, 0.0),
+            end: Offset.zero,
+          ).animate(animation);
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(position: slideAnimation, child: child),
+          );
+        },
+        child: _showChatScreen
+            ? ChatWithAiScreen(
+                key: const ValueKey<String>('chat-screen'),
+                inputController: _chatInputController,
+                autoFocusInput: _autoFocusChatInput,
+                onBackPressed: _closeChatScreen,
+              )
+            : _buildHomeScaffold(context),
+      ),
+    );
+  }
+
+  Widget _buildHomeScaffold(BuildContext context) {
     /// Detect current theme mode
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -70,6 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final titleFontSize = isLargeTablet ? 56.0 : (isTablet ? 48.0 : null);
 
         return Scaffold(
+          key: const ValueKey<String>('home-screen'),
           appBar: AppBar(
             centerTitle: true,
             leading: const SizedBox(), // removes back button
@@ -131,6 +202,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             secondaryText: secondaryText,
                             borderColor: borderColor,
                             isTablet: isTablet,
+                            onTap: () => _openChatScreen(
+                              prefillText: _actionCardPrompts['Notes'],
+                              autoFocusInput: true,
+                            ),
                           ),
                           _ActionCard(
                             icon: Icons.quiz_outlined,
@@ -140,6 +215,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             secondaryText: secondaryText,
                             borderColor: borderColor,
                             isTablet: isTablet,
+                            onTap: () => _openChatScreen(
+                              prefillText: _actionCardPrompts['MCQs'],
+                              autoFocusInput: true,
+                            ),
                           ),
                           _ActionCard(
                             icon: Icons.calendar_today_outlined,
@@ -149,6 +228,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             secondaryText: secondaryText,
                             borderColor: borderColor,
                             isTablet: isTablet,
+                            onTap: () => _openChatScreen(
+                              prefillText: _actionCardPrompts['Planner'],
+                              autoFocusInput: true,
+                            ),
                           ),
                           _ActionCard(
                             icon: Icons.auto_stories_outlined,
@@ -158,6 +241,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             secondaryText: secondaryText,
                             borderColor: borderColor,
                             isTablet: isTablet,
+                            onTap: () => _openChatScreen(
+                              prefillText: _actionCardPrompts['Summaries'],
+                              autoFocusInput: true,
+                            ),
                           ),
                         ],
                       ),
@@ -171,13 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(AppRadius.full),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const ChatWithAiScreen(),
-                              ),
-                            );
-                          },
+                          onTap: _openChatScreen,
                           child: Container(
                             padding: EdgeInsets.symmetric(
                               horizontal: isTablet
@@ -235,6 +316,7 @@ class _ActionCard extends StatelessWidget {
   final Color secondaryText;
   final Color borderColor;
   final bool isTablet;
+  final VoidCallback onTap;
 
   const _ActionCard({
     required this.icon,
@@ -243,6 +325,7 @@ class _ActionCard extends StatelessWidget {
     required this.lightBg,
     required this.secondaryText,
     required this.borderColor,
+    required this.onTap,
     this.isTablet = false,
   });
 
@@ -250,7 +333,7 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppCard(
       padding: EdgeInsets.all(isTablet ? AppSpacing.lg : AppSpacing.md),
-      onTap: () {},
+      onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

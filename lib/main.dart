@@ -5,6 +5,10 @@ import 'core/theme/app_theme.dart';
 import 'core/routes/route_generator.dart';
 import 'features/auth/presentation/auth_gate.dart';
 import 'features/home/presentation/controllers/profile_controller.dart';
+import 'features/notes/presentation/controllers/notes_controller.dart';
+import 'features/practice/presentation/controllers/practice_controller.dart';
+import 'features/books/presentation/controllers/books_controller.dart';
+import 'features/study_plan/presentation/controllers/study_plan_controller.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
@@ -16,11 +20,15 @@ void main() async {
   // Initialize Firebase safely
   await Firebase.initializeApp();
 
-  // Provide profile controller globally so profile and edit profile screens
-  // can share realtime profile state and update actions.
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ProfileController(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ProfileController()),
+        ChangeNotifierProvider(create: (_) => NotesController()),
+        ChangeNotifierProvider(create: (_) => PracticeController()),
+        ChangeNotifierProvider(create: (_) => BooksController()),
+        ChangeNotifierProvider(create: (_) => StudyPlanController()),
+      ],
       child: const MyApp(),
     ),
   );

@@ -7,16 +7,25 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../domain/chat_messages.dart';
+import '../domain/compose_attachment.dart';
 import 'widgets/chat_history_drawer.dart';
 import 'widgets/chat_message_bubble.dart';
 import 'widgets/chat_input_bar.dart';
 import '../data/chat_service.dart';
 
-
 /// Main chat screen with AI assistant
 /// Displays messages, history drawer, and input bar
 class ChatWithAiScreen extends StatefulWidget {
-  const ChatWithAiScreen({super.key});
+  final TextEditingController? inputController;
+  final bool autoFocusInput;
+  final VoidCallback? onBackPressed;
+
+  const ChatWithAiScreen({
+    super.key,
+    this.inputController,
+    this.autoFocusInput = false,
+    this.onBackPressed,
+  });
 
   @override
   State<ChatWithAiScreen> createState() => _ChatWithAiScreenState();
@@ -111,13 +120,13 @@ class _ChatWithAiScreenState extends State<ChatWithAiScreen> {
   }
 
   /// Sends a user message and gets AI response
-  Future<void> _sendMessage(String text) async {
-    if (text.trim().isEmpty) return;
+  Future<bool> _sendMessage(
+    String text,
+    List<ComposeAttachment> attachments,
+  ) async {
+    if (text.trim().isEmpty) return false;
 
-    final userMessage = ChatMessage(
-      text: text,
-      isUser: true,
-    );
+    final userMessage = ChatMessage(text: text, isUser: true);
 
     setState(() {
       _messages.add(userMessage);
@@ -133,16 +142,18 @@ class _ChatWithAiScreenState extends State<ChatWithAiScreen> {
     _scrollToBottom();
 
     try {
-      // Get AI response from ChatGPT API
+      // Attachments are represented as upload metadata for future storage sync.
+      final attachmentUploadQueue = _buildAttachmentUploadQueue(attachments);
+      if (attachmentUploadQueue.isNotEmpty) {
+        // Placeholder for future Firebase Storage upload before AI request.
+      }
+
       final aiResponse = await _chatService.sendMessage(
         userMessage: text,
         conversationHistory: _messages,
       );
 
-      final aiMessage = ChatMessage(
-        text: aiResponse,
-        isUser: false,
-      );
+      final aiMessage = ChatMessage(text: aiResponse, isUser: false);
 
       setState(() {
         _messages.add(aiMessage);
@@ -151,12 +162,13 @@ class _ChatWithAiScreenState extends State<ChatWithAiScreen> {
 
       // Scroll to show AI response
       _scrollToBottom();
+      return true;
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
       if (!mounted) {
-        return;
+        return false;
       }
       // Show error to user
       ScaffoldMessenger.of(context).showSnackBar(
@@ -165,7 +177,16 @@ class _ChatWithAiScreenState extends State<ChatWithAiScreen> {
           backgroundColor: Colors.red,
         ),
       );
+      return false;
     }
+  }
+
+  List<Map<String, dynamic>> _buildAttachmentUploadQueue(
+    List<ComposeAttachment> attachments,
+  ) {
+    return attachments
+        .map((attachment) => attachment.toUploadMetadata())
+        .toList(growable: false);
   }
 
   /// Scrolls chat to bottom smoothly
@@ -191,79 +212,100 @@ class _ChatWithAiScreenState extends State<ChatWithAiScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasEmbeddedBack = widget.onBackPressed != null;
 
-    return Scaffold(
-      key: _scaffoldKey,
-      backgroundColor: isDark
-          ? AppColorsDark.background
-          : AppColorsLight.background,
-
-      // Top app bar
-      appBar: AppBar(
+    return PopScope(
+      canPop: !hasEmbeddedBack,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || !hasEmbeddedBack) {
+          return;
+        }
+        widget.onBackPressed?.call();
+      },
+      child: Scaffold(
+        key: _scaffoldKey,
         backgroundColor: isDark
             ? AppColorsDark.background
             : AppColorsLight.background,
-        elevation: 0,
-        leading: AppIconButton(
-          icon: Icons.menu,
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-        ),
-        title: Text('Chats', style: AppTextStyles.bodyLarge),
-        actions: [
-          AppIconButton(icon: Icons.add, onPressed: _startNewChat),
-          AppIconButton(icon: Icons.share_outlined, onPressed: _shareChat),
-          const SizedBox(width: AppSpacing.sm),
-        ],
-      ),
 
-      // History drawer (left side)
-      drawer: ChatHistoryDrawer(
-        chatHistories: _chatHistories,
-        onChatSelected: _loadChatFromHistory,
-        onDeleteChat: (historyId) {
-          setState(() {
-            _chatHistories.removeWhere((h) => h.id == historyId);
-          });
-        },
-      ),
-
-      // Main chat body
-      body: Column(
-        children: [
-          // Messages list
-          Expanded(
-            child: _messages.isEmpty
-                ? _buildEmptyState(isDark)
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    itemCount: _messages.length + (_isLoading ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      // Show loading indicator at the end
-                      if (index == _messages.length && _isLoading) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.md,
-                          ),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: _buildLoadingBubble(isDark),
-                          ),
-                        );
-                      }
-
-                      final message = _messages[index];
-                      return ChatMessageBubble(
-                        message: message.text,
-                        isUser: message.isUser,
-                      );
-                    },
-                  ),
+        // Top app bar
+        appBar: AppBar(
+          backgroundColor: isDark
+              ? AppColorsDark.background
+              : AppColorsLight.background,
+          elevation: 0,
+          leading: AppIconButton(
+            icon: hasEmbeddedBack ? Icons.arrow_back : Icons.menu,
+            onPressed: hasEmbeddedBack
+                ? widget.onBackPressed!
+                : () => _scaffoldKey.currentState?.openDrawer(),
           ),
+          title: Text('Chats', style: AppTextStyles.bodyLarge),
+          actions: [
+            if (hasEmbeddedBack)
+              AppIconButton(
+                icon: Icons.menu,
+                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+              ),
+            AppIconButton(icon: Icons.add, onPressed: _startNewChat),
+            AppIconButton(icon: Icons.share_outlined, onPressed: _shareChat),
+            const SizedBox(width: AppSpacing.sm),
+          ],
+        ),
 
-          // Chat input bar at bottom
-          ChatInputBar(onSendMessage: _sendMessage),
-        ],
+        // History drawer (left side)
+        drawer: ChatHistoryDrawer(
+          chatHistories: _chatHistories,
+          onChatSelected: _loadChatFromHistory,
+          onDeleteChat: (historyId) {
+            setState(() {
+              _chatHistories.removeWhere((h) => h.id == historyId);
+            });
+          },
+        ),
+
+        // Main chat body
+        body: Column(
+          children: [
+            // Messages list
+            Expanded(
+              child: _messages.isEmpty
+                  ? _buildEmptyState(isDark)
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      itemCount: _messages.length + (_isLoading ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        // Show loading indicator at the end
+                        if (index == _messages.length && _isLoading) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.md,
+                            ),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: _buildLoadingBubble(isDark),
+                            ),
+                          );
+                        }
+
+                        final message = _messages[index];
+                        return ChatMessageBubble(
+                          message: message.text,
+                          isUser: message.isUser,
+                        );
+                      },
+                    ),
+            ),
+
+            // Chat input bar at bottom
+            ChatInputBar(
+              onSendMessage: _sendMessage,
+              controller: widget.inputController,
+              autoFocusOnInit: widget.autoFocusInput,
+            ),
+          ],
+        ),
       ),
     );
   }

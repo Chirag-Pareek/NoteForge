@@ -1,18 +1,28 @@
-import 'package:flutter/material.dart';
-import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/app_icon_button.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/theme/app_radius.dart';
+import 'dart:async';
 
-/// Bottom chat input bar with expandable multiline support
-/// Contains: + button, text field, mic, send, and expand button
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../data/chat_compose_draft_store.dart';
+import '../../domain/compose_attachment.dart';
+import 'chat_compose_editor.dart';
+
+/// Minimal launcher bar for compose flow.
+/// Tapping the input field or expand icon opens full-screen AI compose editor.
 class ChatInputBar extends StatefulWidget {
-  final Function(String) onSendMessage;
+  final SendComposeMessage onSendMessage;
+  final TextEditingController? controller;
+  final bool autoFocusOnInit;
 
   const ChatInputBar({
     super.key,
     required this.onSendMessage,
+    this.controller,
+    this.autoFocusOnInit = false,
   });
 
   @override
@@ -20,54 +30,180 @@ class ChatInputBar extends StatefulWidget {
 }
 
 class _ChatInputBarState extends State<ChatInputBar> {
-  final TextEditingController _controller = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
-  bool _isExpanded = false;
+  static const _draftWriteDebounce = Duration(milliseconds: 300);
+
+  late final TextEditingController _controller;
+  late final bool _ownsController;
+  final ChatComposeDraftStore _draftStore = ChatComposeDraftStore();
+  Timer? _draftSaveDebounceTimer;
+
+  List<ComposeAttachment> _attachments = [];
   bool _hasText = false;
 
   @override
   void initState() {
     super.initState();
-    _controller.addListener(() {
-      setState(() {
-        _hasText = _controller.text.trim().isNotEmpty;
+    _ownsController = widget.controller == null;
+    _controller = widget.controller ?? TextEditingController();
+    _hasText = _controller.text.trim().isNotEmpty;
+    _controller.addListener(_handleTextChange);
+    _restoreDraft();
+
+    if (widget.autoFocusOnInit) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        _openComposeEditor();
       });
-    });
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
+    _draftSaveDebounceTimer?.cancel();
+    _controller.removeListener(_handleTextChange);
+    if (_ownsController) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
-  /// Sends the message and clears input
-  void _sendMessage() {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
-
-    widget.onSendMessage(text);
-    _controller.clear();
-    
-    // Collapse if expanded
-    if (_isExpanded) {
+  void _handleTextChange() {
+    final hasText = _controller.text.trim().isNotEmpty;
+    if (_hasText != hasText) {
       setState(() {
-        _isExpanded = false;
+        _hasText = hasText;
       });
     }
+    _scheduleDraftSave();
   }
 
-  /// Toggles expanded/collapsed state with smooth animation
-  void _toggleExpanded() {
-    setState(() {
-      _isExpanded = !_isExpanded;
-    });
-    
-    // Focus text field when expanding
-    if (_isExpanded) {
-      _focusNode.requestFocus();
+  Future<void> _restoreDraft() async {
+    final draft = await _draftStore.loadDraft();
+    if (!mounted) {
+      return;
     }
+
+    // Preserve prefilled text (e.g. action cards) if already present.
+    if (_controller.text.trim().isNotEmpty) {
+      return;
+    }
+
+    if (draft.text.isEmpty && draft.attachments.isEmpty) {
+      return;
+    }
+
+    _controller.value = TextEditingValue(
+      text: draft.text,
+      selection: TextSelection.collapsed(offset: draft.text.length),
+    );
+
+    setState(() {
+      _attachments = draft.attachments;
+      _hasText = _controller.text.trim().isNotEmpty;
+    });
+  }
+
+  void _scheduleDraftSave() {
+    _draftSaveDebounceTimer?.cancel();
+    _draftSaveDebounceTimer = Timer(_draftWriteDebounce, _persistDraft);
+  }
+
+  Future<void> _persistDraft() async {
+    await _draftStore.saveDraft(
+      text: _controller.text,
+      attachments: _attachments,
+    );
+  }
+
+  Future<void> _clearDraft() async {
+    await _draftStore.clearDraft();
+  }
+
+  void _setAttachments(List<ComposeAttachment> attachments) {
+    setState(() {
+      _attachments = attachments;
+    });
+    _scheduleDraftSave();
+  }
+
+  Future<List<ComposeAttachment>> _pickAttachments() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.custom,
+      allowedExtensions: const [
+        'jpg',
+        'jpeg',
+        'png',
+        'webp',
+        'gif',
+        'pdf',
+        'doc',
+        'docx',
+        'ppt',
+        'pptx',
+        'xls',
+        'xlsx',
+        'txt',
+      ],
+    );
+
+    if (result == null) {
+      return const <ComposeAttachment>[];
+    }
+
+    return result.files
+        .where((file) => file.path != null && file.path!.trim().isNotEmpty)
+        .map(ComposeAttachment.fromPlatformFile)
+        .toList();
+  }
+
+  Future<bool> _sendMessage(
+    String text,
+    List<ComposeAttachment> attachments,
+  ) async {
+    final success = await widget.onSendMessage(text, attachments);
+    if (!success) {
+      return false;
+    }
+
+    _controller.clear();
+    _setAttachments(const <ComposeAttachment>[]);
+    await _clearDraft();
+    return true;
+  }
+
+  Future<void> _openComposeEditor() async {
+    await showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'Compose Editor',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (context, _, _) {
+        return ChatComposeEditor(
+          controller: _controller,
+          initialAttachments: _attachments,
+          onAttachmentsChanged: _setAttachments,
+          onPickAttachments: _pickAttachments,
+          onSendMessage: _sendMessage,
+        );
+      },
+      transitionBuilder: (context, animation, _, child) {
+        final slideAnimation =
+            Tween<Offset>(
+              begin: const Offset(0.0, 1.0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            );
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(position: slideAnimation, child: child),
+        );
+      },
+    );
   }
 
   @override
@@ -87,108 +223,71 @@ class _ChatInputBarState extends State<ChatInputBar> {
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Main input container (rounded border)
               Expanded(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                  constraints: BoxConstraints(
-                    minHeight: 48,
-                    maxHeight: _isExpanded ? 120 : 48,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColorsDark.background : AppColorsLight.background,
-                    border: Border.all(
-                      color: isDark ? AppColorsDark.border : AppColorsLight.border,
-                    ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
                     borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      // Plus button (attachments)
-                      AppIconButton(
-                        icon: Icons.add,
-                        onPressed: () {
-                          // Placeholder for attachments
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Attachments coming soon'),
-                            ),
-                          );
-                        },
+                    onTap: _openComposeEditor,
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColorsDark.background
+                            : AppColorsLight.background,
+                        border: Border.all(
+                          color: isDark
+                              ? AppColorsDark.border
+                              : AppColorsLight.border,
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
-
-                      // Text input field
-                      Expanded(
-                        child: TextField(
-                          controller: _controller,
-                          focusNode: _focusNode,
-                          maxLines: _isExpanded ? 4 : 1,
-                          textInputAction: TextInputAction.send,
-                          onSubmitted: (_) => _sendMessage(),
-                          style: AppTextStyles.bodyMedium,
-                          decoration: InputDecoration(
-                            hintText: 'Ask Anything',
-                            hintStyle: AppTextStyles.bodyMedium.copyWith(
-                              color: isDark
-                                  ? AppColorsDark.secondaryText
-                                  : AppColorsLight.secondaryText,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.sm,
-                              vertical: AppSpacing.md,
-                            ),
-                          ),
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                      ),
+                      child: Text(
+                        _hasText ? _controller.text : 'Ask Anything',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: _hasText
+                              ? (isDark
+                                    ? AppColorsDark.primaryText
+                                    : AppColorsLight.primaryText)
+                              : (isDark
+                                    ? AppColorsDark.secondaryText
+                                    : AppColorsLight.secondaryText),
                         ),
                       ),
-
-                      // Mic button (voice input)
-                      AppIconButton(
-                        icon: Icons.mic_none,
-                        onPressed: () {
-                          // Placeholder for voice input
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Voice input coming soon'),
-                            ),
-                          );
-                        },
-                      ),
-
-                      // Send button (only show when has text)
-                      if (_hasText)
-                        AppIconButton(
-                          icon: Icons.send,
-                          onPressed: _sendMessage,
-                        ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-
               const SizedBox(width: AppSpacing.sm),
-
-              // Expand button (outside the input container)
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: isDark ? AppColorsDark.background : AppColorsLight.background,
+                  color: isDark
+                      ? AppColorsDark.background
+                      : AppColorsLight.background,
                   border: Border.all(
-                    color: isDark ? AppColorsDark.border : AppColorsLight.border,
+                    color: isDark
+                        ? AppColorsDark.border
+                        : AppColorsLight.border,
                   ),
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: IconButton(
+                  onPressed: _openComposeEditor,
                   icon: Icon(
-                    _isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
-                    color: isDark ? AppColorsDark.primaryText : AppColorsLight.primaryText,
+                    Icons.open_in_full,
+                    color: isDark
+                        ? AppColorsDark.primaryText
+                        : AppColorsLight.primaryText,
                   ),
-                  onPressed: _toggleExpanded,
                 ),
               ),
             ],
