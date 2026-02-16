@@ -1,18 +1,20 @@
 // lib/features/chat/presentation/widgets/chat_history_drawer.dart
 
 import 'package:flutter/material.dart';
+
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_effects.dart';
+import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/theme/app_radius.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../chat_with_ai_screen.dart';
 
-/// Left drawer showing chat history organized by date
+/// Left drawer showing chat history organized by recency buckets.
 class ChatHistoryDrawer extends StatefulWidget {
   final List<ChatHistory> chatHistories;
-  final Function(ChatHistory) onChatSelected;
-  final Function(String) onDeleteChat;
+  final ValueChanged<ChatHistory> onChatSelected;
+  final ValueChanged<String> onDeleteChat;
 
   const ChatHistoryDrawer({
     super.key,
@@ -26,143 +28,226 @@ class ChatHistoryDrawer extends StatefulWidget {
 }
 
 class _ChatHistoryDrawerState extends State<ChatHistoryDrawer> {
+  final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _animateIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _animateIn = true;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Filter histories by search query
     final filteredHistories = widget.chatHistories.where((history) {
       return history.topic.toLowerCase().contains(_searchQuery.toLowerCase());
-    }).toList();
+    }).toList()..sort((a, b) => b.date.compareTo(a.date));
 
-    // Group histories by date
     final groupedHistories = _groupHistoriesByDate(filteredHistories);
 
     return Drawer(
-      backgroundColor: isDark ? AppColorsDark.background : AppColorsLight.background,
+      backgroundColor: isDark
+          ? AppColorsDark.background
+          : AppColorsLight.background,
       child: SafeArea(
-        child: Column(
-          children: [
-            // Drawer header with search
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0, end: _animateIn ? 1 : 0),
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            return Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(-18 * (1 - value), 0),
+                child: child,
+              ),
+            );
+          },
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final horizontalPadding = constraints.maxWidth < 340
+                  ? AppSpacing.md
+                  : AppSpacing.lg;
+
+              return Column(
                 children: [
-                  Text(
-                    'History',
-                    style: AppTextStyles.titleMedium,
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      AppSpacing.lg,
+                      horizontalPadding,
+                      AppSpacing.md,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('History', style: AppTextStyles.titleMedium),
+                        const SizedBox(height: AppSpacing.md),
+                        AppTextField(
+                          hintText: 'Search chats',
+                          controller: _searchController,
+                          onChanged: (value) {
+                            setState(() {
+                              _searchQuery = value;
+                            });
+                          },
+                          suffixIcon: _searchQuery.isEmpty
+                              ? const Icon(Icons.search)
+                              : IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      _searchQuery = '';
+                                    });
+                                  },
+                                ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  
-                  // Search bar
-                  AppTextField(
-                    hintText: 'Search',
-            
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                    },
+                  const Divider(height: 1),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      child: filteredHistories.isEmpty
+                          ? _buildEmptyState(isDark)
+                          : ListView.builder(
+                              key: ValueKey<int>(filteredHistories.length),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: horizontalPadding,
+                                vertical: AppSpacing.md,
+                              ),
+                              itemCount: groupedHistories.length,
+                              itemBuilder: (context, index) {
+                                final group = groupedHistories[index];
+                                return _buildDateGroup(
+                                  context,
+                                  group.dateLabel,
+                                  group.histories,
+                                  isDark,
+                                );
+                              },
+                            ),
+                    ),
                   ),
                 ],
-              ),
-            ),
-
-            const Divider(height: 1),
-
-            // History list
-            Expanded(
-              child: filteredHistories.isEmpty
-                  ? _buildEmptyState(isDark)
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.lg,
-                        vertical: AppSpacing.md,
-                      ),
-                      itemCount: groupedHistories.length,
-                      itemBuilder: (context, index) {
-                        final group = groupedHistories[index];
-                        return _buildDateGroup(
-                          context,
-                          group.dateLabel,
-                          group.histories,
-                          isDark,
-                        );
-                      },
-                    ),
-            ),
-          ],
+              );
+            },
+          ),
         ),
       ),
     );
   }
 
-  /// Builds a date group with its history items
   Widget _buildDateGroup(
     BuildContext context,
     String dateLabel,
     List<ChatHistory> histories,
     bool isDark,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Date label
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-          child: Text(
-            dateLabel,
-            style: AppTextStyles.label.copyWith(
-              color: isDark ? AppColorsDark.secondaryText : AppColorsLight.secondaryText,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            child: Text(
+              dateLabel,
+              style: AppTextStyles.label.copyWith(
+                color: isDark
+                    ? AppColorsDark.secondaryText
+                    : AppColorsLight.secondaryText,
+              ),
             ),
           ),
-        ),
-
-        // History items
-        ...histories.map((history) => _buildHistoryItem(context, history, isDark)),
-      ],
+          ...histories.map(
+            (history) => _buildHistoryItem(context, history, isDark),
+          ),
+        ],
+      ),
     );
   }
 
-  /// Builds a single history item card
-  Widget _buildHistoryItem(BuildContext context, ChatHistory history, bool isDark) {
+  Widget _buildHistoryItem(
+    BuildContext context,
+    ChatHistory history,
+    bool isDark,
+  ) {
+    final timeLabel = _buildItemTimeLabel(history.date);
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: InkWell(
         onTap: () => widget.onChatSelected(history),
         borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: isDark ? AppColorsDark.background : AppColorsLight.background,
+            color: isDark
+                ? AppColorsDark.background
+                : AppColorsLight.background,
             border: Border.all(
               color: isDark ? AppColorsDark.border : AppColorsLight.border,
             ),
             borderRadius: BorderRadius.circular(AppRadius.md),
+            boxShadow: AppEffects.subtleDepth(Theme.of(context).brightness),
           ),
           child: Row(
             children: [
               Expanded(
-                child: Text(
-                  history.topic,
-                  style: AppTextStyles.bodyMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      history.topic,
+                      style: AppTextStyles.bodyMedium,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      timeLabel,
+                      style: AppTextStyles.label.copyWith(
+                        color: isDark
+                            ? AppColorsDark.secondaryText
+                            : AppColorsLight.secondaryText,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              
-              // Delete button
-              InkWell(
-                onTap: () => _confirmDelete(context, history),
-                child: Icon(
+              IconButton(
+                onPressed: () => _confirmDelete(context, history),
+                icon: Icon(
                   Icons.close,
                   size: 16,
-                  color: isDark ? AppColorsDark.secondaryText : AppColorsLight.secondaryText,
+                  color: isDark
+                      ? AppColorsDark.secondaryText
+                      : AppColorsLight.secondaryText,
                 ),
+                splashRadius: AppSpacing.xl,
+                tooltip: 'Delete chat',
               ),
             ],
           ),
@@ -171,9 +256,9 @@ class _ChatHistoryDrawerState extends State<ChatHistoryDrawer> {
     );
   }
 
-  /// Empty state when no history
   Widget _buildEmptyState(bool isDark) {
     return Center(
+      key: ValueKey<String>(_searchQuery),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
@@ -188,7 +273,9 @@ class _ChatHistoryDrawerState extends State<ChatHistoryDrawer> {
             Text(
               _searchQuery.isEmpty ? 'No chat history yet' : 'No results found',
               style: AppTextStyles.bodyMedium.copyWith(
-                color: isDark ? AppColorsDark.secondaryText : AppColorsLight.secondaryText,
+                color: isDark
+                    ? AppColorsDark.secondaryText
+                    : AppColorsLight.secondaryText,
               ),
               textAlign: TextAlign.center,
             ),
@@ -198,7 +285,6 @@ class _ChatHistoryDrawerState extends State<ChatHistoryDrawer> {
     );
   }
 
-  /// Confirms deletion of a chat history item
   void _confirmDelete(BuildContext context, ChatHistory history) {
     showDialog(
       context: context,
@@ -222,13 +308,14 @@ class _ChatHistoryDrawerState extends State<ChatHistoryDrawer> {
     );
   }
 
-  /// Groups chat histories by date (Today, Yesterday, specific dates)
   List<DateGroup> _groupHistoriesByDate(List<ChatHistory> histories) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
+    final weekStart = today.subtract(Duration(days: today.weekday - 1));
 
-    final Map<String, List<ChatHistory>> grouped = {};
+    final todayItems = <ChatHistory>[];
+    final thisWeekItems = <ChatHistory>[];
+    final earlierItems = <ChatHistory>[];
 
     for (final history in histories) {
       final date = DateTime(
@@ -236,52 +323,46 @@ class _ChatHistoryDrawerState extends State<ChatHistoryDrawer> {
         history.date.month,
         history.date.day,
       );
-
-      String label;
       if (date == today) {
-        label = 'Today';
-      } else if (date == yesterday) {
-        label = 'Yesterday';
+        todayItems.add(history);
+      } else if (!date.isBefore(weekStart)) {
+        thisWeekItems.add(history);
       } else {
-        label = '${date.day} ${_getMonthName(date.month)} ${date.year}';
+        earlierItems.add(history);
       }
-
-      grouped[label] ??= [];
-      grouped[label]!.add(history);
     }
 
-    // Sort groups: Today, Yesterday, then by date descending
-    final sortedKeys = grouped.keys.toList()
-      ..sort((a, b) {
-        if (a == 'Today') return -1;
-        if (b == 'Today') return 1;
-        if (a == 'Yesterday') return -1;
-        if (b == 'Yesterday') return 1;
-        return b.compareTo(a);
-      });
-
-    return sortedKeys.map((label) {
-      return DateGroup(dateLabel: label, histories: grouped[label]!);
-    }).toList();
+    final groups = <DateGroup>[];
+    if (todayItems.isNotEmpty) {
+      groups.add(DateGroup(dateLabel: 'Today', histories: todayItems));
+    }
+    if (thisWeekItems.isNotEmpty) {
+      groups.add(DateGroup(dateLabel: 'This week', histories: thisWeekItems));
+    }
+    if (earlierItems.isNotEmpty) {
+      groups.add(DateGroup(dateLabel: 'Earlier', histories: earlierItems));
+    }
+    return groups;
   }
 
-  /// Returns month name for a given month number
-  String _getMonthName(int month) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return months[month - 1];
+  String _buildItemTimeLabel(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final itemDate = DateTime(date.year, date.month, date.day);
+    final time = TimeOfDay.fromDateTime(date).format(context);
+
+    if (itemDate == today) {
+      return time;
+    }
+
+    final shortDate = '${date.day}/${date.month}/${date.year}';
+    return '$shortDate • $time';
   }
 }
 
-/// Data model for grouped date section
 class DateGroup {
   final String dateLabel;
   final List<ChatHistory> histories;
 
-  DateGroup({
-    required this.dateLabel,
-    required this.histories,
-  });
+  DateGroup({required this.dateLabel, required this.histories});
 }

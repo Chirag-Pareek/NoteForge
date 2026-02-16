@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_effects.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/responsive/app_breakpoints.dart';
@@ -12,9 +13,15 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryText = isDark ? AppColorsDark.primaryText : AppColorsLight.primaryText;
-    final lightBg = isDark ? AppColorsDark.lightBackground : AppColorsLight.lightBackground;
-    final secondaryText = isDark ? AppColorsDark.secondaryText : AppColorsLight.secondaryText;
+    final primaryText = isDark
+        ? AppColorsDark.primaryText
+        : AppColorsLight.primaryText;
+    final lightBg = isDark
+        ? AppColorsDark.lightBackground
+        : AppColorsLight.lightBackground;
+    final secondaryText = isDark
+        ? AppColorsDark.secondaryText
+        : AppColorsLight.secondaryText;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -26,7 +33,9 @@ class WelcomeScreen extends StatelessWidget {
         final circleSize = isLargeTablet ? 280.0 : (isTablet ? 240.0 : 200.0);
         final iconSize = isLargeTablet ? 120.0 : (isTablet ? 100.0 : 80.0);
         final buttonWidth = isLargeTablet ? 400.0 : (isTablet ? 340.0 : 280.0);
-        final horizontalPadding = isTablet ? AppSpacing.xxl * 3 : AppSpacing.xxl;
+        final horizontalPadding = isTablet
+            ? AppSpacing.xxl * 3
+            : AppSpacing.xxl;
 
         return Scaffold(
           body: SafeArea(
@@ -45,7 +54,7 @@ class WelcomeScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const Spacer(),
-                      
+
                       // Illustration Circle
                       Container(
                         width: circleSize,
@@ -53,9 +62,9 @@ class WelcomeScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: lightBg,
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: primaryText,
-                            width: 1.5,
+                          border: Border.all(color: primaryText, width: 1.5),
+                          boxShadow: AppEffects.subtleDepth(
+                            Theme.of(context).brightness,
                           ),
                         ),
                         child: Icon(
@@ -64,35 +73,37 @@ class WelcomeScreen extends StatelessWidget {
                           color: primaryText,
                         ),
                       ),
-                      
+
                       const Spacer(flex: 1),
-                      
+
                       // App Name
                       Text(
                         'NoteForge',
-                        style: isTablet 
+                        style: isTablet
                             ? AppTextStyles.display.copyWith(
                                 fontSize: isLargeTablet ? 48 : 40,
                               )
                             : AppTextStyles.display,
                         textAlign: TextAlign.center,
                       ),
-                      
-                      SizedBox(height: isTablet ? AppSpacing.lg : AppSpacing.md),
-                      
+
+                      SizedBox(
+                        height: isTablet ? AppSpacing.lg : AppSpacing.md,
+                      ),
+
                       // Subtitle
                       Text(
                         'Your intelligent learning companion\nfor academic excellence',
-                        style: (isTablet 
-                            ? AppTextStyles.bodyMedium 
-                            : AppTextStyles.bodySmall).copyWith(
-                          color: secondaryText,
-                        ),
+                        style:
+                            (isTablet
+                                    ? AppTextStyles.bodyMedium
+                                    : AppTextStyles.bodySmall)
+                                .copyWith(color: secondaryText),
                         textAlign: TextAlign.center,
                       ),
-                      
+
                       const Spacer(),
-                      
+
                       // Continue Button
                       SizedBox(
                         width: buttonWidth,
@@ -104,8 +115,10 @@ class WelcomeScreen extends StatelessWidget {
                           },
                         ),
                       ),
-                      
-                      SizedBox(height: isTablet ? AppSpacing.xxl * 2 : AppSpacing.xxl),
+
+                      SizedBox(
+                        height: isTablet ? AppSpacing.xxl * 2 : AppSpacing.xxl,
+                      ),
                     ],
                   ),
                 ),

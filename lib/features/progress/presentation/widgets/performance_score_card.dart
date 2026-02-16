@@ -1,6 +1,6 @@
-
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_effects.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
@@ -10,10 +10,7 @@ import '../../../../core/theme/app_text_styles.dart';
 class PerformanceScoreCard extends StatelessWidget {
   final double score; // 0-100
 
-  const PerformanceScoreCard({
-    super.key,
-    required this.score,
-  });
+  const PerformanceScoreCard({super.key, required this.score});
 
   /// Determines level label based on score
   String _getLevelLabel() {
@@ -44,6 +41,7 @@ class PerformanceScoreCard extends StatelessWidget {
           color: isDark ? AppColorsDark.border : AppColorsLight.border,
         ),
         borderRadius: BorderRadius.circular(12),
+        boxShadow: AppEffects.subtleDepth(Theme.of(context).brightness),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,7 +51,9 @@ class PerformanceScoreCard extends StatelessWidget {
             children: [
               Text(
                 'Performance Score',
-                style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -61,11 +61,18 @@ class PerformanceScoreCard extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColorsDark.lightBackground : AppColorsLight.lightBackground,
+                  color: isDark
+                      ? AppColorsDark.lightBackground
+                      : AppColorsLight.lightBackground,
                   border: Border.all(
-                    color: isDark ? AppColorsDark.border : AppColorsLight.border,
+                    color: isDark
+                        ? AppColorsDark.border
+                        : AppColorsLight.border,
                   ),
                   borderRadius: BorderRadius.circular(999),
+                  boxShadow: AppEffects.subtleDepth(
+                    Theme.of(context).brightness,
+                  ),
                 ),
                 child: Text(
                   level,
@@ -93,7 +100,9 @@ class PerformanceScoreCard extends StatelessWidget {
               Text(
                 '/ 100',
                 style: AppTextStyles.bodyLarge.copyWith(
-                  color: isDark ? AppColorsDark.secondaryText : AppColorsLight.secondaryText,
+                  color: isDark
+                      ? AppColorsDark.secondaryText
+                      : AppColorsLight.secondaryText,
                 ),
               ),
             ],
@@ -107,7 +116,9 @@ class PerformanceScoreCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: score / 100,
               minHeight: 6,
-              backgroundColor: isDark ? AppColorsDark.border : AppColorsLight.border,
+              backgroundColor: isDark
+                  ? AppColorsDark.border
+                  : AppColorsLight.border,
               valueColor: AlwaysStoppedAnimation<Color>(_getScoreColor(isDark)),
             ),
           ),
@@ -117,23 +128,11 @@ class PerformanceScoreCard extends StatelessWidget {
           // Score breakdown
           Row(
             children: [
-              _buildScoreComponent(
-                context,
-                'Activity',
-                0.90,
-              ),
+              _buildScoreComponent(context, 'Activity', 0.90),
               const SizedBox(width: AppSpacing.lg),
-              _buildScoreComponent(
-                context,
-                'Consistency',
-                0.87,
-              ),
+              _buildScoreComponent(context, 'Consistency', 0.87),
               const SizedBox(width: AppSpacing.lg),
-              _buildScoreComponent(
-                context,
-                'Mastery',
-                0.85,
-              ),
+              _buildScoreComponent(context, 'Mastery', 0.85),
             ],
           ),
         ],
@@ -142,7 +141,11 @@ class PerformanceScoreCard extends StatelessWidget {
   }
 
   /// Builds a single score component indicator
-  Widget _buildScoreComponent(BuildContext context, String label, double value) {
+  Widget _buildScoreComponent(
+    BuildContext context,
+    String label,
+    double value,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
@@ -152,7 +155,9 @@ class PerformanceScoreCard extends StatelessWidget {
           label,
           style: AppTextStyles.label.copyWith(
             fontSize: 11,
-            color: isDark ? AppColorsDark.secondaryText : AppColorsLight.secondaryText,
+            color: isDark
+                ? AppColorsDark.secondaryText
+                : AppColorsLight.secondaryText,
           ),
         ),
         const SizedBox(height: 4),
@@ -163,15 +168,21 @@ class PerformanceScoreCard extends StatelessWidget {
               height: 16,
               decoration: BoxDecoration(
                 color: value >= 0.85
-                    ? (isDark ? AppColorsDark.primaryText : AppColorsLight.primaryText)
-                    : (isDark ? AppColorsDark.secondaryText : AppColorsLight.secondaryText),
+                    ? (isDark
+                          ? AppColorsDark.primaryText
+                          : AppColorsLight.primaryText)
+                    : (isDark
+                          ? AppColorsDark.secondaryText
+                          : AppColorsLight.secondaryText),
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
             const SizedBox(width: 4),
             Text(
               '${(value * 100).toInt()}%',
-              style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600),
+              style: AppTextStyles.bodySmall.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),

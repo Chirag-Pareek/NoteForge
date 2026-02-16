@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Noteforge uses the microphone for voice-to-text in AI chat.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Noteforge uses speech recognition to convert your voice into chat text.</string>
 </dict>
 </plist>

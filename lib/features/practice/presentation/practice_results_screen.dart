@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../core/responsive/app_breakpoints.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_effects.dart';
 import '../../../core/theme/app_radius.dart';
 
 /// Displays the results after completing a practice session.
@@ -23,7 +25,8 @@ class PracticeResultsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final brightness = Theme.of(context).brightness;
+    final isDark = brightness == Brightness.dark;
     final secondaryText = isDark
         ? AppColorsDark.secondaryText
         : AppColorsLight.secondaryText;
@@ -53,147 +56,180 @@ class PracticeResultsScreen extends StatelessWidget {
         elevation: 0,
         automaticallyImplyLeading: false,
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            children: [
-              // Score circle
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: scoreColor.withValues(alpha: 0.12),
-                  border: Border.all(color: scoreColor, width: 3),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final horizontalPadding = AppBreakpoints.pageHorizontalPadding(width);
+          final maxWidth = AppBreakpoints.pageMaxContentWidth(width);
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: AppSpacing.xl,
                 ),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      '${accuracy.toInt()}%',
-                      style: AppTextStyles.display.copyWith(
-                        color: scoreColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Icon(scoreIcon, size: 28, color: scoreColor),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                scoreLabel,
-                style: AppTextStyles.titleLarge.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                '$correct out of $total correct',
-                style: AppTextStyles.bodyMedium.copyWith(color: secondaryText),
-              ),
-              const SizedBox(height: AppSpacing.xxl),
-
-              // Stats row
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: BoxDecoration(
-                  border: Border.all(color: borderColor),
-                  borderRadius: AppRadius.mdBorder,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _ResultStat(
-                      label: 'Correct',
-                      value: '$correct',
-                      color: const Color(0xFF22C55E),
-                    ),
-                    _ResultStat(
-                      label: 'Incorrect',
-                      value: '${total - correct}',
-                      color: const Color(0xFFEF4444),
-                    ),
-                    _ResultStat(
-                      label: 'Accuracy',
-                      value: '${accuracy.toInt()}%',
-                      color: scoreColor,
-                    ),
-                  ],
-                ),
-              ),
-
-              // Weak topics
-              if (weakTopics.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.xl),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Areas to improve',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                ...weakTopics.map(
-                  (t) => Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(AppSpacing.md),
+                    // Score circle
+                    Container(
+                      width: 120,
+                      height: 120,
                       decoration: BoxDecoration(
-                        border: Border.all(
-                          color: const Color(0xFFFBBF24).withValues(alpha: 0.4),
-                        ),
-                        borderRadius: AppRadius.mdBorder,
-                        color: const Color(0xFFFBBF24).withValues(alpha: 0.06),
+                        shape: BoxShape.circle,
+                        color: scoreColor.withValues(alpha: 0.12),
+                        border: Border.all(color: scoreColor, width: 3),
+                        boxShadow: AppEffects.subtleDepth(brightness),
                       ),
-                      child: Row(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
-                            Icons.warning_amber_outlined,
-                            size: 16,
-                            color: Color(0xFFF59E0B),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Text(t, style: AppTextStyles.bodySmall),
+                          Text(
+                            '${accuracy.toInt()}%',
+                            style: AppTextStyles.display.copyWith(
+                              color: scoreColor,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ),
-              ],
+                    const SizedBox(height: AppSpacing.lg),
+                    Icon(scoreIcon, size: 28, color: scoreColor),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      scoreLabel,
+                      style: AppTextStyles.titleLarge.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      '$correct out of $total correct',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
 
-              const SizedBox(height: AppSpacing.xxl),
-              // Buttons
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () =>
-                      Navigator.popUntil(context, (r) => r.isFirst),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDark
-                        ? AppColorsDark.primaryButton
-                        : AppColorsLight.primaryButton,
-                    foregroundColor: isDark ? Colors.black : Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.mdBorder,
+                    // Stats row
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: borderColor),
+                        borderRadius: AppRadius.mdBorder,
+                        boxShadow: AppEffects.subtleDepth(brightness),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _ResultStat(
+                            label: 'Correct',
+                            value: '$correct',
+                            color: const Color(0xFF22C55E),
+                          ),
+                          _ResultStat(
+                            label: 'Incorrect',
+                            value: '${total - correct}',
+                            color: const Color(0xFFEF4444),
+                          ),
+                          _ResultStat(
+                            label: 'Accuracy',
+                            value: '${accuracy.toInt()}%',
+                            color: scoreColor,
+                          ),
+                        ],
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.md,
+
+                    // Weak topics
+                    if (weakTopics.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.xl),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Areas to improve',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      ...weakTopics.map(
+                        (t) => Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: const Color(
+                                  0xFFFBBF24,
+                                ).withValues(alpha: 0.4),
+                              ),
+                              borderRadius: AppRadius.mdBorder,
+                              color: const Color(
+                                0xFFFBBF24,
+                              ).withValues(alpha: 0.06),
+                              boxShadow: AppEffects.subtleDepth(brightness),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.warning_amber_outlined,
+                                  size: 16,
+                                  color: Color(0xFFF59E0B),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: Text(
+                                    t,
+                                    style: AppTextStyles.bodySmall,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: AppSpacing.xxl),
+                    // Buttons
+                    SizedBox(
+                      width: double.infinity,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: AppRadius.mdBorder,
+                          boxShadow: AppEffects.subtleDepth(brightness),
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () =>
+                              Navigator.popUntil(context, (r) => r.isFirst),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isDark
+                                ? AppColorsDark.primaryButton
+                                : AppColorsLight.primaryButton,
+                            foregroundColor: isDark
+                                ? Colors.black
+                                : Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppRadius.mdBorder,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.md,
+                            ),
+                          ),
+                          child: Text('Done', style: AppTextStyles.button),
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Text('Done', style: AppTextStyles.button),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

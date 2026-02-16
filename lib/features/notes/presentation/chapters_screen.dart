@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/responsive/app_breakpoints.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_effects.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/widgets/app_dialog.dart';
 import '../../../core/widgets/app_progress_indicator.dart';
@@ -35,7 +37,8 @@ class _ChaptersScreenState extends State<ChaptersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final brightness = Theme.of(context).brightness;
+    final isDark = brightness == Brightness.dark;
     final secondaryText = isDark
         ? AppColorsDark.secondaryText
         : AppColorsLight.secondaryText;
@@ -85,80 +88,93 @@ class _ChaptersScreenState extends State<ChaptersScreen> {
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            itemCount: ctrl.chapters.length,
-            separatorBuilder: (_, index) =>
-                const SizedBox(height: AppSpacing.sm),
-            itemBuilder: (context, index) {
-              final chapter = ctrl.chapters[index];
-              return InkWell(
-                onTap: () {
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.topics,
-                    arguments: {
-                      'chapterId': chapter.id,
-                      'subjectId': widget.subjectId,
-                      'chapterName': chapter.name,
+          final width = MediaQuery.sizeOf(context).width;
+          final horizontalPadding = AppBreakpoints.pageHorizontalPadding(width);
+          final maxWidth = AppBreakpoints.pageMaxContentWidth(width);
+
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: ListView.separated(
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: AppSpacing.lg,
+                ),
+                itemCount: ctrl.chapters.length,
+                separatorBuilder: (_, index) =>
+                    const SizedBox(height: AppSpacing.sm),
+                itemBuilder: (context, index) {
+                  final chapter = ctrl.chapters[index];
+                  return InkWell(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.topics,
+                        arguments: {
+                          'chapterId': chapter.id,
+                          'subjectId': widget.subjectId,
+                          'chapterName': chapter.name,
+                        },
+                      );
                     },
-                  );
-                },
-                onLongPress: () =>
-                    _showOptions(context, chapter.id, chapter.name),
-                borderRadius: AppRadius.mdBorder,
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: borderColor),
+                    onLongPress: () =>
+                        _showOptions(context, chapter.id, chapter.name),
                     borderRadius: AppRadius.mdBorder,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: borderColor),
+                        borderRadius: AppRadius.mdBorder,
+                        boxShadow: AppEffects.subtleDepth(brightness),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  chapter.name,
-                                  style: AppTextStyles.bodyLarge.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      chapter.name,
+                                      style: AppTextStyles.bodyLarge.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Text(
+                                      '${chapter.topicsCount} topics • Updated ${_formatDate(chapter.updatedAt)}',
+                                      style: AppTextStyles.label.copyWith(
+                                        color: secondaryText,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: AppSpacing.xs),
-                                Text(
-                                  '${chapter.topicsCount} topics • Updated ${_formatDate(chapter.updatedAt)}',
-                                  style: AppTextStyles.label.copyWith(
-                                    color: secondaryText,
-                                  ),
+                              ),
+                              Text(
+                                '${(chapter.progress * 100).toInt()}%',
+                                style: AppTextStyles.label.copyWith(
+                                  fontWeight: FontWeight.w600,
                                 ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Icon(
+                                Icons.chevron_right,
+                                color: secondaryText,
+                                size: 20,
+                              ),
+                            ],
                           ),
-                          Text(
-                            '${(chapter.progress * 100).toInt()}%',
-                            style: AppTextStyles.label.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Icon(
-                            Icons.chevron_right,
-                            color: secondaryText,
-                            size: 20,
-                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          AppProgressIndicator(value: chapter.progress),
                         ],
                       ),
-                      const SizedBox(height: AppSpacing.md),
-                      AppProgressIndicator(value: chapter.progress),
-                    ],
-                  ),
-                ),
-              );
-            },
+                    ),
+                  );
+                },
+              ),
+            ),
           );
         },
       ),

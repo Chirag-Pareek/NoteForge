@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/responsive/app_breakpoints.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_effects.dart';
 import '../../../core/theme/app_radius.dart';
 import 'controllers/notes_controller.dart';
 
@@ -77,7 +79,8 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final brightness = Theme.of(context).brightness;
+    final isDark = brightness == Brightness.dark;
     final secondaryText = isDark
         ? AppColorsDark.secondaryText
         : AppColorsLight.secondaryText;
@@ -150,46 +153,63 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
             ),
           ],
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            children: [
-              // Title field
-              TextField(
-                controller: _titleController,
-                style: AppTextStyles.titleLarge.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Note title',
-                  hintStyle: AppTextStyles.titleLarge.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: secondaryText,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final horizontalPadding = AppBreakpoints.pageHorizontalPadding(
+              width,
+            );
+            final maxWidth = AppBreakpoints.pageMaxContentWidth(width);
+            return Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: horizontalPadding,
+                    vertical: AppSpacing.lg,
                   ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                maxLines: null,
-              ),
-              Divider(color: borderColor, height: AppSpacing.xl),
-              // Content field
-              TextField(
-                controller: _contentController,
-                style: AppTextStyles.bodyMedium.copyWith(height: 1.8),
-                decoration: InputDecoration(
-                  hintText: 'Start writing your notes...',
-                  hintStyle: AppTextStyles.bodyMedium.copyWith(
-                    color: secondaryText,
+                  child: Column(
+                    children: [
+                      // Title field
+                      TextField(
+                        controller: _titleController,
+                        style: AppTextStyles.titleLarge.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Note title',
+                          hintStyle: AppTextStyles.titleLarge.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: secondaryText,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        maxLines: null,
+                      ),
+                      Divider(color: borderColor, height: AppSpacing.xl),
+                      // Content field
+                      TextField(
+                        controller: _contentController,
+                        style: AppTextStyles.bodyMedium.copyWith(height: 1.8),
+                        decoration: InputDecoration(
+                          hintText: 'Start writing your notes...',
+                          hintStyle: AppTextStyles.bodyMedium.copyWith(
+                            color: secondaryText,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        maxLines: null,
+                        minLines: 20,
+                        keyboardType: TextInputType.multiline,
+                      ),
+                    ],
                   ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
                 ),
-                maxLines: null,
-                minLines: 20,
-                keyboardType: TextInputType.multiline,
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -249,20 +269,30 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
               style: AppTextStyles.bodySmall.copyWith(color: secondaryText),
             ),
             const SizedBox(height: AppSpacing.lg),
-            TextField(
-              controller: promptController,
-              autofocus: true,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: 'e.g. "Explain thermodynamics laws with examples"',
-                hintStyle: AppTextStyles.bodySmall.copyWith(
-                  color: secondaryText,
-                ),
-                filled: true,
-                fillColor: lightBg,
-                border: OutlineInputBorder(
-                  borderRadius: AppRadius.mdBorder,
-                  borderSide: BorderSide(color: borderColor),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: AppRadius.mdBorder,
+                boxShadow: AppEffects.subtleDepth(Theme.of(context).brightness),
+              ),
+              child: TextField(
+                controller: promptController,
+                autofocus: true,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'e.g. "Explain thermodynamics laws with examples"',
+                  hintStyle: AppTextStyles.bodySmall.copyWith(
+                    color: secondaryText,
+                  ),
+                  filled: true,
+                  fillColor: lightBg,
+                  border: OutlineInputBorder(
+                    borderRadius: AppRadius.mdBorder,
+                    borderSide: BorderSide(color: borderColor),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: AppRadius.mdBorder,
+                    borderSide: BorderSide(color: borderColor),
+                  ),
                 ),
               ),
             ),

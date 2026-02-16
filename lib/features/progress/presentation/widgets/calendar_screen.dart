@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:noteforge/core/responsive/app_breakpoints.dart';
 import 'package:noteforge/core/theme/app_colors.dart';
+import 'package:noteforge/core/theme/app_effects.dart';
 import 'package:noteforge/core/theme/app_spacing.dart';
 import 'package:noteforge/core/theme/app_text_styles.dart';
 import 'package:noteforge/features/progress/presentation/widgets/todo_calendar.dart';
@@ -91,69 +93,77 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final tasksForSelectedDate = _getTasksForDate(_selectedDate);
+    final width = MediaQuery.sizeOf(context).width;
+    final horizontalPadding = AppBreakpoints.pageHorizontalPadding(width);
+    final maxWidth = AppBreakpoints.pageMaxContentWidth(width);
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        widget.topPadding,
-        AppSpacing.lg,
-        AppSpacing.lg,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Calendar widget
-          TodoCalendar(
-            selectedDate: _selectedDate,
-            tasks: _tasks,
-            onDateSelected: (date) {
-              setState(() {
-                _selectedDate = date;
-              });
-            },
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            horizontalPadding,
+            widget.topPadding,
+            horizontalPadding,
+            AppSpacing.lg,
           ),
-
-          const SizedBox(height: AppSpacing.lg),
-
-          // Tasks section
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Tasks for ${_selectedDate.day}/${_selectedDate.month}',
-                style: AppTextStyles.titleMedium,
+              // Calendar widget
+              TodoCalendar(
+                selectedDate: _selectedDate,
+                tasks: _tasks,
+                onDateSelected: (date) {
+                  setState(() {
+                    _selectedDate = date;
+                  });
+                },
               ),
-              IconButton(
-                icon: const Icon(Icons.add, size: 20),
-                onPressed: _addTask,
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // Tasks section
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Tasks for ${_selectedDate.day}/${_selectedDate.month}',
+                    style: AppTextStyles.titleMedium,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add, size: 20),
+                    onPressed: _addTask,
+                  ),
+                ],
               ),
+
+              const SizedBox(height: AppSpacing.md),
+
+              // Task list
+              if (tasksForSelectedDate.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.xl),
+                    child: Text(
+                      'No tasks for this day',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: isDark
+                            ? AppColorsDark.secondaryText
+                            : AppColorsLight.secondaryText,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                ...tasksForSelectedDate.map(
+                  (task) => _buildTaskItem(context, task),
+                ),
+
+              const SizedBox(height: AppSpacing.xxl),
             ],
           ),
-
-          const SizedBox(height: AppSpacing.md),
-
-          // Task list
-          if (tasksForSelectedDate.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Text(
-                  'No tasks for this day',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: isDark
-                        ? AppColorsDark.secondaryText
-                        : AppColorsLight.secondaryText,
-                  ),
-                ),
-              ),
-            )
-          else
-            ...tasksForSelectedDate.map(
-              (task) => _buildTaskItem(context, task),
-            ),
-
-          const SizedBox(height: AppSpacing.xxl),
-        ],
+        ),
       ),
     );
   }
@@ -172,6 +182,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             color: isDark ? AppColorsDark.border : AppColorsLight.border,
           ),
           borderRadius: BorderRadius.circular(10),
+          boxShadow: AppEffects.subtleDepth(Theme.of(context).brightness),
         ),
         child: Row(
           children: [

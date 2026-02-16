@@ -1,6 +1,6 @@
-
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_effects.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
@@ -30,6 +30,7 @@ class InsightCard extends StatelessWidget {
           color: isDark ? AppColorsDark.border : AppColorsLight.border,
         ),
         borderRadius: BorderRadius.circular(10),
+        boxShadow: AppEffects.subtleDepth(Theme.of(context).brightness),
       ),
       child: Row(
         children: [
@@ -37,13 +38,18 @@ class InsightCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: isDark ? AppColorsDark.lightBackground : AppColorsLight.lightBackground,
+              color: isDark
+                  ? AppColorsDark.lightBackground
+                  : AppColorsLight.lightBackground,
               borderRadius: BorderRadius.circular(8),
+              boxShadow: AppEffects.subtleDepth(Theme.of(context).brightness),
             ),
             child: Icon(
               icon,
               size: 20,
-              color: isDark ? AppColorsDark.primaryText : AppColorsLight.primaryText,
+              color: isDark
+                  ? AppColorsDark.primaryText
+                  : AppColorsLight.primaryText,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -53,13 +59,17 @@ class InsightCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   description,
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: isDark ? AppColorsDark.secondaryText : AppColorsLight.secondaryText,
+                    color: isDark
+                        ? AppColorsDark.secondaryText
+                        : AppColorsLight.secondaryText,
                   ),
                 ),
               ],

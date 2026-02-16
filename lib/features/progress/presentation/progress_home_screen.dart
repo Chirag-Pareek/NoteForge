@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../core/responsive/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_effects.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import 'widgets/floating_progress_nav.dart';
@@ -117,94 +119,120 @@ class _ProgressHomeScreenState extends State<ProgressHomeScreen> {
 
   /// Overview Dashboard - Main screen showing all key metrics
   Widget _buildOverviewScreen(double topPadding) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        topPadding,
-        AppSpacing.lg,
-        AppSpacing.lg,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Top metrics row
-          Row(
+    final width = MediaQuery.sizeOf(context).width;
+    final isTablet = !AppBreakpoints.isMobile(width);
+    final maxWidth = AppBreakpoints.pageMaxContentWidth(width);
+    final horizontalPadding = AppBreakpoints.pageHorizontalPadding(width);
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            horizontalPadding,
+            topPadding,
+            horizontalPadding,
+            AppSpacing.lg,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: StreakCard(currentStreak: _currentStreak)),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(child: _buildTodaySummaryCard()),
+              // Top metrics row
+              if (isTablet)
+                Row(
+                  children: [
+                    Expanded(child: StreakCard(currentStreak: _currentStreak)),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(child: _buildTodaySummaryCard()),
+                  ],
+                )
+              else
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: StreakCard(currentStreak: _currentStreak),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    SizedBox(
+                      width: double.infinity,
+                      child: _buildTodaySummaryCard(),
+                    ),
+                  ],
+                ),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // Performance score
+              PerformanceScoreCard(score: _performanceScore),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // Section title
+              Text('Activity Overview', style: AppTextStyles.titleMedium),
+              const SizedBox(height: AppSpacing.md),
+
+              // GitHub-style heatmap
+              const HeatmapTracker(),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // Subject mastery section
+              Text('Subject Mastery', style: AppTextStyles.titleMedium),
+              const SizedBox(height: AppSpacing.md),
+
+              // Subject progress bars
+              SubjectProgressBar(
+                subject: 'Physics',
+                progress: 0.92,
+                trend: 'up',
+                onTap: () => _openSubjectChart('Physics'),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              SubjectProgressBar(
+                subject: 'Mathematics',
+                progress: 0.88,
+                trend: 'up',
+                onTap: () => _openSubjectChart('Mathematics'),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              SubjectProgressBar(
+                subject: 'Chemistry',
+                progress: 0.76,
+                trend: 'down',
+                onTap: () => _openSubjectChart('Chemistry'),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              SubjectProgressBar(
+                subject: 'Biology',
+                progress: 0.85,
+                trend: 'stable',
+                onTap: () => _openSubjectChart('Biology'),
+              ),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // Insights section
+              Text('Quick Insights', style: AppTextStyles.titleMedium),
+              const SizedBox(height: AppSpacing.md),
+
+              const InsightCard(
+                icon: Icons.trending_up,
+                title: 'Strong Momentum',
+                description: 'You\'ve studied 7 days in a row. Keep it up!',
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              const InsightCard(
+                icon: Icons.lightbulb_outline,
+                title: 'Peak Performance Time',
+                description: 'Your focus is highest between 6-8 PM.',
+              ),
+
+              const SizedBox(height: AppSpacing.xxl),
             ],
           ),
-
-          const SizedBox(height: AppSpacing.lg),
-
-          // Performance score
-          PerformanceScoreCard(score: _performanceScore),
-
-          const SizedBox(height: AppSpacing.lg),
-
-          // Section title
-          Text('Activity Overview', style: AppTextStyles.titleMedium),
-          const SizedBox(height: AppSpacing.md),
-
-          // GitHub-style heatmap
-          const HeatmapTracker(),
-
-          const SizedBox(height: AppSpacing.lg),
-
-          // Subject mastery section
-          Text('Subject Mastery', style: AppTextStyles.titleMedium),
-          const SizedBox(height: AppSpacing.md),
-
-          // Subject progress bars
-          SubjectProgressBar(
-            subject: 'Physics',
-            progress: 0.92,
-            trend: 'up',
-            onTap: () => _openSubjectChart('Physics'),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          SubjectProgressBar(
-            subject: 'Mathematics',
-            progress: 0.88,
-            trend: 'up',
-            onTap: () => _openSubjectChart('Mathematics'),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          SubjectProgressBar(
-            subject: 'Chemistry',
-            progress: 0.76,
-            trend: 'down',
-            onTap: () => _openSubjectChart('Chemistry'),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          SubjectProgressBar(
-            subject: 'Biology',
-            progress: 0.85,
-            trend: 'stable',
-            onTap: () => _openSubjectChart('Biology'),
-          ),
-
-          const SizedBox(height: AppSpacing.lg),
-
-          // Insights section
-          Text('Quick Insights', style: AppTextStyles.titleMedium),
-          const SizedBox(height: AppSpacing.md),
-
-          const InsightCard(
-            icon: Icons.trending_up,
-            title: 'Strong Momentum',
-            description: 'You\'ve studied 7 days in a row. Keep it up!',
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          const InsightCard(
-            icon: Icons.lightbulb_outline,
-            title: 'Peak Performance Time',
-            description: 'Your focus is highest between 6-8 PM.',
-          ),
-
-          const SizedBox(height: AppSpacing.xxl),
-        ],
+        ),
       ),
     );
   }
@@ -221,6 +249,7 @@ class _ProgressHomeScreenState extends State<ProgressHomeScreen> {
           color: isDark ? AppColorsDark.border : AppColorsLight.border,
         ),
         borderRadius: BorderRadius.circular(12),
+        boxShadow: AppEffects.subtleDepth(Theme.of(context).brightness),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

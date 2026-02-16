@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:noteforge/core/responsive/app_breakpoints.dart';
 import 'package:noteforge/core/theme/app_colors.dart';
+import 'package:noteforge/core/theme/app_effects.dart';
 import 'package:noteforge/core/theme/app_spacing.dart';
 import 'package:noteforge/core/theme/app_text_styles.dart';
 
@@ -16,48 +18,56 @@ class AnalyticsScreen extends StatelessWidget {
     final mutedText = isDark
         ? AppColorsDark.secondaryText
         : AppColorsLight.secondaryText;
+    final width = MediaQuery.sizeOf(context).width;
+    final horizontalPadding = AppBreakpoints.pageHorizontalPadding(width);
+    final maxWidth = AppBreakpoints.pageMaxContentWidth(width);
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        topPadding,
-        AppSpacing.lg,
-        AppSpacing.lg,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Analytics Snapshot', style: AppTextStyles.titleMedium),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Track how your study time converts to outcomes.',
-            style: AppTextStyles.bodySmall.copyWith(color: mutedText),
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            horizontalPadding,
+            topPadding,
+            horizontalPadding,
+            AppSpacing.lg,
           ),
-          const SizedBox(height: AppSpacing.lg),
-          _MetricCard(
-            icon: Icons.timer_outlined,
-            label: 'Weekly Study Time',
-            value: '14h 32m',
-            trend: '+12% vs last week',
-            borderColor: borderColor,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Analytics Snapshot', style: AppTextStyles.titleMedium),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Track how your study time converts to outcomes.',
+                style: AppTextStyles.bodySmall.copyWith(color: mutedText),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              _MetricCard(
+                icon: Icons.timer_outlined,
+                label: 'Weekly Study Time',
+                value: '14h 32m',
+                trend: '+12% vs last week',
+                borderColor: borderColor,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _MetricCard(
+                icon: Icons.check_circle_outline,
+                label: 'Task Completion',
+                value: '86%',
+                trend: '+9% consistency',
+                borderColor: borderColor,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _MetricCard(
+                icon: Icons.insights_outlined,
+                label: 'Avg Test Score',
+                value: '88.4',
+                trend: '+3.1 points',
+                borderColor: borderColor,
+              ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          _MetricCard(
-            icon: Icons.check_circle_outline,
-            label: 'Task Completion',
-            value: '86%',
-            trend: '+9% consistency',
-            borderColor: borderColor,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _MetricCard(
-            icon: Icons.insights_outlined,
-            label: 'Avg Test Score',
-            value: '88.4',
-            trend: '+3.1 points',
-            borderColor: borderColor,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -94,6 +104,7 @@ class _MetricCard extends StatelessWidget {
         color: background,
         border: Border.all(color: borderColor),
         borderRadius: BorderRadius.circular(12),
+        boxShadow: AppEffects.subtleDepth(Theme.of(context).brightness),
       ),
       child: Row(
         children: [

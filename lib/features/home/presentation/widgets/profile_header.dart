@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_effects.dart';
 
 /// ProfileHeader
 /// -------------
@@ -71,6 +72,7 @@ class ProfileHeader extends StatelessWidget {
               color: lightBg,
               shape: BoxShape.circle,
               border: Border.all(color: borderColor, width: 2),
+              boxShadow: AppEffects.subtleDepth(Theme.of(context).brightness),
             ),
 
             // If photoUrl exists → load image

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:noteforge/core/responsive/app_breakpoints.dart';
 import 'package:noteforge/core/theme/app_colors.dart';
+import 'package:noteforge/core/theme/app_effects.dart';
 import 'package:noteforge/core/theme/app_spacing.dart';
 import 'package:noteforge/core/theme/app_text_styles.dart';
 
@@ -13,6 +15,9 @@ class AiInsightsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
+    final width = MediaQuery.sizeOf(context).width;
+    final horizontalPadding = AppBreakpoints.pageHorizontalPadding(width);
+    final maxWidth = AppBreakpoints.pageMaxContentWidth(width);
 
     const insights = [
       _InsightData(
@@ -35,34 +40,42 @@ class AiInsightsScreen extends StatelessWidget {
       ),
     ];
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        topPadding,
-        AppSpacing.lg,
-        AppSpacing.lg,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('AI Insights', style: AppTextStyles.titleMedium),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Personalized guidance based on your study patterns.',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: isDark
-                  ? AppColorsDark.secondaryText
-                  : AppColorsLight.secondaryText,
-            ),
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            horizontalPadding,
+            topPadding,
+            horizontalPadding,
+            AppSpacing.lg,
           ),
-          const SizedBox(height: AppSpacing.lg),
-          ...insights.map(
-            (insight) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: _InsightCard(insight: insight, borderColor: borderColor),
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('AI Insights', style: AppTextStyles.titleMedium),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Personalized guidance based on your study patterns.',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: isDark
+                      ? AppColorsDark.secondaryText
+                      : AppColorsLight.secondaryText,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              ...insights.map(
+                (insight) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: _InsightCard(
+                    insight: insight,
+                    borderColor: borderColor,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -87,6 +100,7 @@ class _InsightCard extends StatelessWidget {
         color: background,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor),
+        boxShadow: AppEffects.subtleDepth(Theme.of(context).brightness),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

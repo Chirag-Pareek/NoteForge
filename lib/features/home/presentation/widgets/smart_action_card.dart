@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/app_card.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -39,57 +40,39 @@ class SmartActionCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     /// Theme-aware colors from your centralized design system
-    final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
-
     final lightBg = isDark
         ? AppColorsDark.lightBackground
         : AppColorsLight.lightBackground;
 
-    final backgroundColor = isDark
-        ? AppColorsDark.background
-        : AppColorsLight.background;
-
-    /// InkWell provides ripple effect + tap handling
-    return InkWell(
+    /// AppCard keeps border + subtle depth + ripple behavior consistent.
+    return AppCard(
       onTap: onTap,
-      borderRadius: AppRadius.mdBorder, // keeps ripple inside rounded edges
-      child: Container(
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          border: Border.all(color: borderColor),
-          borderRadius: AppRadius.mdBorder,
-        ),
-        child: Column(
-          /// Center icon + label vertically
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Icon container (small square background)
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: lightBg,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: Icon(
-                icon,
-                size: 16,
-                color: Theme.of(context).iconTheme.color,
-              ),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: lightBg,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
-
-            const SizedBox(height: AppSpacing.sm),
-
-            // Label text
-            Text(
-              label,
-              style: AppTextStyles.label,
-              textAlign: TextAlign.center,
-              maxLines: 2, // prevents overflow in grid
-              overflow: TextOverflow.ellipsis,
+            child: Icon(
+              icon,
+              size: 16,
+              color: Theme.of(context).iconTheme.color,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            label,
+            style: AppTextStyles.label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }

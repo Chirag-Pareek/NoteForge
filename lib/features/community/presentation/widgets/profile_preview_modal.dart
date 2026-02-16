@@ -9,6 +9,7 @@ class ProfilePreviewModal extends StatelessWidget {
   final String name;
   final String field;
   final String username;
+  final String? profileImageUrl;
   final String headline;
   final List<String> focusTags;
 
@@ -17,6 +18,7 @@ class ProfilePreviewModal extends StatelessWidget {
     required this.name,
     required this.field,
     required this.username,
+    this.profileImageUrl,
     required this.headline,
     required this.focusTags,
   });
@@ -26,6 +28,7 @@ class ProfilePreviewModal extends StatelessWidget {
     required String name,
     required String field,
     required String username,
+    String? profileImageUrl,
     required String headline,
     required List<String> focusTags,
   }) {
@@ -37,6 +40,7 @@ class ProfilePreviewModal extends StatelessWidget {
         name: name,
         field: field,
         username: username,
+        profileImageUrl: profileImageUrl,
         headline: headline,
         focusTags: focusTags,
       ),
@@ -64,15 +68,21 @@ class ProfilePreviewModal extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Theme.of(context).dividerTheme.color ??
+                        color:
+                            Theme.of(context).dividerTheme.color ??
                             Theme.of(context).colorScheme.outline,
                       ),
                     ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      _initials(name),
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: profileImageUrl != null
+                        ? Image.network(
+                            profileImageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _AvatarFallback(name: name);
+                            },
+                          )
+                        : _AvatarFallback(name: name),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -99,10 +109,7 @@ class ProfilePreviewModal extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              Text(
-                headline,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              Text(headline, style: Theme.of(context).textTheme.bodySmall),
               const SizedBox(height: AppSpacing.md),
               Wrap(
                 spacing: AppSpacing.sm,
@@ -150,13 +157,29 @@ class ProfilePreviewModal extends StatelessWidget {
       ),
     );
   }
+}
+
+class _AvatarFallback extends StatelessWidget {
+  final String name;
+
+  const _AvatarFallback({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        _initials(name),
+        style: Theme.of(context).textTheme.bodyLarge,
+      ),
+    );
+  }
 
   String _initials(String value) {
     final parts = value.trim().split(' ');
-    if (parts.isEmpty) {
+    if (parts.isEmpty || parts.first.isEmpty) {
       return '';
     }
-    if (parts.length == 1) {
+    if (parts.length == 1 || parts.last.isEmpty) {
       return parts.first.substring(0, 1).toUpperCase();
     }
     return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'

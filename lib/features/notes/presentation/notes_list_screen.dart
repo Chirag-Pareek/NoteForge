@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/responsive/app_breakpoints.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_effects.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/widgets/app_dialog.dart';
 import '../../../core/routes/app_routes.dart';
@@ -38,7 +40,8 @@ class _NotesListScreenState extends State<NotesListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final brightness = Theme.of(context).brightness;
+    final isDark = brightness == Brightness.dark;
     final secondaryText = isDark
         ? AppColorsDark.secondaryText
         : AppColorsLight.secondaryText;
@@ -88,115 +91,133 @@ class _NotesListScreenState extends State<NotesListScreen> {
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            itemCount: ctrl.notes.length,
-            separatorBuilder: (_, index) =>
-                const SizedBox(height: AppSpacing.sm),
-            itemBuilder: (context, index) {
-              final note = ctrl.notes[index];
-              return InkWell(
-                onTap: () {
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.noteEditor,
-                    arguments: {
-                      'noteId': note.id,
-                      'title': note.title,
-                      'content': note.content,
-                      'topicId': widget.topicId,
-                      'chapterId': widget.chapterId,
-                      'subjectId': widget.subjectId,
+          final width = MediaQuery.sizeOf(context).width;
+          final horizontalPadding = AppBreakpoints.pageHorizontalPadding(width);
+          final maxWidth = AppBreakpoints.pageMaxContentWidth(width);
+
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: ListView.separated(
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: AppSpacing.lg,
+                ),
+                itemCount: ctrl.notes.length,
+                separatorBuilder: (_, index) =>
+                    const SizedBox(height: AppSpacing.sm),
+                itemBuilder: (context, index) {
+                  final note = ctrl.notes[index];
+                  return InkWell(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.noteEditor,
+                        arguments: {
+                          'noteId': note.id,
+                          'title': note.title,
+                          'content': note.content,
+                          'topicId': widget.topicId,
+                          'chapterId': widget.chapterId,
+                          'subjectId': widget.subjectId,
+                        },
+                      );
                     },
-                  );
-                },
-                onLongPress: () => _showDeleteOption(context, note.id),
-                borderRadius: AppRadius.mdBorder,
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: borderColor),
+                    onLongPress: () => _showDeleteOption(context, note.id),
                     borderRadius: AppRadius.mdBorder,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: borderColor),
+                        borderRadius: AppRadius.mdBorder,
+                        boxShadow: AppEffects.subtleDepth(brightness),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (note.isDraft) ...[
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.sm,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? AppColorsDark.border
-                                          : AppColorsLight.border,
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.sm,
+                                Row(
+                                  children: [
+                                    if (note.isDraft) ...[
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: AppSpacing.sm,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? AppColorsDark.border
+                                              : AppColorsLight.border,
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.sm,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'DRAFT',
+                                          style: AppTextStyles.label.copyWith(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: AppSpacing.sm),
+                                    ],
+                                    Expanded(
+                                      child: Text(
+                                        note.title.isEmpty
+                                            ? 'Untitled Note'
+                                            : note.title,
+                                        style: AppTextStyles.bodyMedium
+                                            .copyWith(
+                                              fontWeight: FontWeight.w500,
+                                              fontStyle: note.title.isEmpty
+                                                  ? FontStyle.italic
+                                                  : FontStyle.normal,
+                                            ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    child: Text(
-                                      'DRAFT',
-                                      style: AppTextStyles.label.copyWith(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                Text(
+                                  note.content.isEmpty
+                                      ? 'No content'
+                                      : note.content.length > 80
+                                      ? '${note.content.substring(0, 80)}...'
+                                      : note.content,
+                                  style: AppTextStyles.label.copyWith(
+                                    color: secondaryText,
                                   ),
-                                  const SizedBox(width: AppSpacing.sm),
-                                ],
-                                Expanded(
-                                  child: Text(
-                                    note.title.isEmpty
-                                        ? 'Untitled Note'
-                                        : note.title,
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                      fontStyle: note.title.isEmpty
-                                          ? FontStyle.italic
-                                          : FontStyle.normal,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                Text(
+                                  'Updated ${_formatDate(note.updatedAt)}',
+                                  style: AppTextStyles.label.copyWith(
+                                    color: secondaryText,
+                                    fontSize: 10,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: AppSpacing.xs),
-                            Text(
-                              note.content.isEmpty
-                                  ? 'No content'
-                                  : note.content.length > 80
-                                  ? '${note.content.substring(0, 80)}...'
-                                  : note.content,
-                              style: AppTextStyles.label.copyWith(
-                                color: secondaryText,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: AppSpacing.xs),
-                            Text(
-                              'Updated ${_formatDate(note.updatedAt)}',
-                              style: AppTextStyles.label.copyWith(
-                                color: secondaryText,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                          Icon(
+                            Icons.chevron_right,
+                            color: secondaryText,
+                            size: 20,
+                          ),
+                        ],
                       ),
-                      Icon(Icons.chevron_right, color: secondaryText, size: 20),
-                    ],
-                  ),
-                ),
-              );
-            },
+                    ),
+                  );
+                },
+              ),
+            ),
           );
         },
       ),

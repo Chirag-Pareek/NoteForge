@@ -4,6 +4,7 @@ import 'package:noteforge/features/home/presentation/study_hub_screen.dart';
 import 'package:noteforge/features/community/presentation/community_home_screen.dart';
 import 'package:noteforge/features/progress/presentation/progress_home_screen.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_effects.dart';
 import '../theme/app_spacing.dart';
 // import '../theme/app_text_styles.dart';
 import '../../features/home/presentation/home_screen.dart';
@@ -45,6 +46,7 @@ class _MainShellState extends State<MainShell> {
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
           border: Border(top: BorderSide(color: borderColor)),
+          boxShadow: AppEffects.subtleDepth(Theme.of(context).brightness),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,

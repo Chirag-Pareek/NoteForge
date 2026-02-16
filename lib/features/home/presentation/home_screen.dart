@@ -5,6 +5,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_effects.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
 import '../../../core/responsive/app_breakpoints.dart';
@@ -274,6 +275,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 AppRadius.full,
                               ),
                               border: Border.all(color: borderColor),
+                              boxShadow: AppEffects.subtleDepth(
+                                Theme.of(context).brightness,
+                              ),
                             ),
                             child: Row(
                               children: [

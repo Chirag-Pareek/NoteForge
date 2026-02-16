@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
+import 'app_radius.dart';
+import 'app_spacing.dart';
 import 'app_text_styles.dart';
 
 class AppTheme {
@@ -13,7 +15,10 @@ class AppTheme {
       primaryColor: AppColorsLight.primaryButton,
       scaffoldBackgroundColor: AppColorsLight.background,
       fontFamily: GoogleFonts.poppins().fontFamily,
-      textTheme: _textTheme(AppColorsLight.primaryText, AppColorsLight.secondaryText),
+      textTheme: _textTheme(
+        AppColorsLight.primaryText,
+        AppColorsLight.secondaryText,
+      ),
       colorScheme: const ColorScheme.light(
         primary: AppColorsLight.primaryButton,
         onPrimary: Colors.white,
@@ -29,8 +34,25 @@ class AppTheme {
         thickness: 1,
         space: 1,
       ),
-      iconTheme: const IconThemeData(
-        color: AppColorsLight.primaryText,
+      iconTheme: const IconThemeData(color: AppColorsLight.primaryText),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.mdBorder),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xl,
+            vertical: AppSpacing.md,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.mdBorder),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xl,
+            vertical: AppSpacing.md,
+          ),
+        ),
       ),
     );
   }
@@ -42,7 +64,10 @@ class AppTheme {
       primaryColor: AppColorsDark.primaryButton,
       scaffoldBackgroundColor: AppColorsDark.background,
       fontFamily: GoogleFonts.poppins().fontFamily,
-      textTheme: _textTheme(AppColorsDark.primaryText, AppColorsDark.secondaryText),
+      textTheme: _textTheme(
+        AppColorsDark.primaryText,
+        AppColorsDark.secondaryText,
+      ),
       colorScheme: const ColorScheme.dark(
         primary: AppColorsDark.primaryButton,
         onPrimary: Colors.black, // Inverted for dark mode primary button text
@@ -58,8 +83,25 @@ class AppTheme {
         thickness: 1,
         space: 1,
       ),
-      iconTheme: const IconThemeData(
-        color: AppColorsDark.primaryText,
+      iconTheme: const IconThemeData(color: AppColorsDark.primaryText),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.mdBorder),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xl,
+            vertical: AppSpacing.md,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.mdBorder),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xl,
+            vertical: AppSpacing.md,
+          ),
+        ),
       ),
     );
   }

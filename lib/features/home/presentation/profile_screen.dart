@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/responsive/app_breakpoints.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_colors.dart';
@@ -101,10 +102,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final controller = context.watch<ProfileController>();
 
-    /// Theme-aware border color
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
-
     /// Loading UI while profile data is being fetched.
     if (controller.isLoading) {
       return Scaffold(
@@ -145,92 +142,92 @@ class _ProfileScreenState extends State<ProfileScreen> {
     const tests = 24;
     const wins = 12;
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        title: Text('Profile', style: AppTextStyles.bodyLarge),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final horizontalPadding = AppBreakpoints.pageHorizontalPadding(width);
+        final maxWidth = AppBreakpoints.pageMaxContentWidth(width);
 
-        // More options icon (currently unused)
-        actions: [
-          IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // =====================
-            // Profile Header Section
-            // =====================
-            ProfileHeader(photoUrl: photoUrl, username: username, bio: bio),
-
-            const SizedBox(height: AppSpacing.xl),
-
-            // =====================
-            // Stats Row (Streak, Tests, Wins)
-            // =====================
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ProfileStatCard(value: '$streak', label: 'Streak'),
-                  ProfileStatCard(value: '$tests', label: 'Tests'),
-                  ProfileStatCard(value: '$wins', label: 'Wins'),
-                ],
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            elevation: 0,
+            title: Text('Profile', style: AppTextStyles.bodyLarge),
+            actions: [
+              IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
+            ],
+          ),
+          body: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    ProfileHeader(
+                      photoUrl: photoUrl,
+                      username: username,
+                      bio: bio,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ProfileStatCard(value: '$streak', label: 'Streak'),
+                          ProfileStatCard(value: '$tests', label: 'Tests'),
+                          ProfileStatCard(value: '$wins', label: 'Wins'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
+                      child: Column(
+                        children: [
+                          ProfileOptionTile(
+                            icon: Icons.person_outline,
+                            title: 'Edit Profile',
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                AppRoutes.profilEdit,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          ProfileOptionTile(
+                            icon: Icons.lock_outline,
+                            title: 'Privacy & Security',
+                            onTap: () {},
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          ProfileOptionTile(
+                            icon: Icons.download_outlined,
+                            title: 'Export Data',
+                            onTap: () {},
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          ProfileOptionTile(
+                            icon: Icons.logout,
+                            title: 'Log Out',
+                            onTap: _handleLogout,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                  ],
+                ),
               ),
             ),
-
-            const SizedBox(height: AppSpacing.xl),
-
-            // =====================
-            // Profile Options Menu
-            // =====================
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: borderColor)),
-              ),
-              child: Column(
-                children: [
-                  // Edit Profile
-                  ProfileOptionTile(
-                    icon: Icons.person_outline,
-                    title: 'Edit Profile',
-                    onTap: () {
-                      Navigator.pushNamed(context, AppRoutes.profilEdit);
-                    },
-                  ),
-
-                  // Privacy & Security
-                  ProfileOptionTile(
-                    icon: Icons.lock_outline,
-                    title: 'Privacy & Security',
-                    onTap: () {},
-                  ),
-
-                  // Export Data
-                  ProfileOptionTile(
-                    icon: Icons.download_outlined,
-                    title: 'Export Data',
-                    onTap: () {},
-                  ),
-
-                  // Logout (destructive action)
-                  ProfileOptionTile(
-                    icon: Icons.logout,
-                    title: 'Log Out',
-                    isDestructive: true,
-                    onTap: _handleLogout,
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: AppSpacing.xxl),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

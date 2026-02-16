@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/responsive/app_breakpoints.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_effects.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../domain/profile_model.dart';
@@ -168,7 +170,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     /// Theme-aware colors
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final brightness = Theme.of(context).brightness;
+    final isDark = brightness == Brightness.dark;
     final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
     final lightBg = isDark
         ? AppColorsDark.lightBackground
@@ -177,138 +180,132 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ? AppColorsDark.primaryText
         : AppColorsLight.primaryText;
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final horizontalPadding = AppBreakpoints.pageHorizontalPadding(width);
+        final maxWidth = AppBreakpoints.pageMaxContentWidth(width);
 
-        // Back navigation
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-
-        title: Text('Edit Profile', style: AppTextStyles.bodyLarge),
-
-        // Save button in AppBar
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.md),
-            child: TextButton(
-              onPressed: _isSaving ? null : _saveProfile,
-              child: Text(
-                'Save',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: _isSaving ? null : primaryText,
-                  fontWeight: FontWeight.w600,
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Text('Edit Profile', style: AppTextStyles.bodyLarge),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.md),
+                child: TextButton(
+                  onPressed: _isSaving ? null : _saveProfile,
+                  child: Text(
+                    'Save',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: _isSaving ? null : primaryText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-
-      /// Show loader until user data is fetched
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                children: [
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Profile Photo Circle
-                  Container(
-                    width: 96,
-                    height: 96,
-                    decoration: BoxDecoration(
-                      color: lightBg,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: borderColor, width: 2),
-                    ),
-                    child: _selectedPhotoBytes != null
-                        ? ClipOval(
-                            child: Image.memory(
-                              _selectedPhotoBytes!,
-                              fit: BoxFit.cover,
+          body: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: maxWidth),
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                        vertical: AppSpacing.lg,
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 96,
+                            height: 96,
+                            decoration: BoxDecoration(
+                              color: lightBg,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: borderColor, width: 2),
+                              boxShadow: AppEffects.subtleDepth(brightness),
                             ),
-                          )
-                        : (_photoUrl != null && _photoUrl!.isNotEmpty)
-                        ? ClipOval(
-                            child: Image.network(
-                              _photoUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(
-                                  Icons.person,
-                                  size: 48,
-                                  color: primaryText.withAlpha(
-                                    (0.5 * 255).toInt(),
+                            child: _selectedPhotoBytes != null
+                                ? ClipOval(
+                                    child: Image.memory(
+                                      _selectedPhotoBytes!,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : (_photoUrl != null && _photoUrl!.isNotEmpty)
+                                ? ClipOval(
+                                    child: Image.network(
+                                      _photoUrl!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return Icon(
+                                              Icons.person,
+                                              size: 48,
+                                              color: primaryText.withAlpha(
+                                                (0.5 * 255).toInt(),
+                                              ),
+                                            );
+                                          },
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.person,
+                                    size: 48,
+                                    color: primaryText.withAlpha(
+                                      (0.5 * 255).toInt(),
+                                    ),
                                   ),
-                                );
-                              },
-                            ),
-                          )
-                        : Icon(
-                            Icons.person,
-                            size: 48,
-                            color: primaryText.withAlpha((0.5 * 255).toInt()),
                           ),
+                          const SizedBox(height: AppSpacing.md),
+                          AppButton(
+                            label: 'Change Photo',
+                            onPressed: _handleChangePhoto,
+                          ),
+                          const SizedBox(height: AppSpacing.xxl),
+                          _buildLabeledField(
+                            label: 'Username',
+                            controller: _usernameController,
+                            hint: 'Enter username',
+                            primaryText: primaryText,
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          _buildLabeledField(
+                            label: 'Bio',
+                            controller: _bioController,
+                            hint: 'Tell us about yourself',
+                            maxLines: 3,
+                            primaryText: primaryText,
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          _buildLabeledField(
+                            label: 'School / College',
+                            controller: _schoolController,
+                            hint: 'Enter institution name',
+                            primaryText: primaryText,
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          _buildLabeledField(
+                            label: 'Grade / Year',
+                            controller: _gradeController,
+                            hint: 'e.g., Class 12 or 2nd Year',
+                            primaryText: primaryText,
+                          ),
+                          const SizedBox(height: AppSpacing.xxl),
+                        ],
+                      ),
+                    ),
                   ),
-
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Change Photo Button
-                  AppButton(
-                    label: 'Change Photo',
-                    onPressed: _handleChangePhoto,
-                  ),
-
-                  const SizedBox(height: AppSpacing.xxl),
-
-                  // Username Field
-                  _buildLabeledField(
-                    label: 'Username',
-                    controller: _usernameController,
-                    hint: 'Enter username',
-                    primaryText: primaryText,
-                  ),
-
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Bio Field
-                  _buildLabeledField(
-                    label: 'Bio',
-                    controller: _bioController,
-                    hint: 'Tell us about yourself',
-                    maxLines: 3,
-                    primaryText: primaryText,
-                  ),
-
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // School Field
-                  _buildLabeledField(
-                    label: 'School / College',
-                    controller: _schoolController,
-                    hint: 'Enter institution name',
-                    primaryText: primaryText,
-                  ),
-
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Grade Field
-                  _buildLabeledField(
-                    label: 'Grade / Year',
-                    controller: _gradeController,
-                    hint: 'e.g., Class 12 or 2nd Year',
-                    primaryText: primaryText,
-                  ),
-
-                  const SizedBox(height: AppSpacing.xxl),
-                ],
-              ),
-            ),
+                ),
+        );
+      },
     );
   }
 
