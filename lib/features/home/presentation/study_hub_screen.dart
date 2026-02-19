@@ -129,6 +129,7 @@ class _StudyHubScreenState extends State<StudyHubScreen> {
             leading: const SizedBox(),
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             elevation: 0,
+            forceMaterialTransparency: true,
             title: Text(
               'Study Hub',
               style:
@@ -334,9 +335,7 @@ class _StudyHubScreenState extends State<StudyHubScreen> {
                                 content.contains(query);
                           }).toList();
 
-                          final visibleNotes = query.isEmpty
-                              ? filteredNotes.take(2).toList()
-                              : filteredNotes;
+                          final visibleNotes = filteredNotes.take(3).toList();
                           if (visibleNotes.isEmpty) {
                             return NoteListCard(
                               title: query.isEmpty

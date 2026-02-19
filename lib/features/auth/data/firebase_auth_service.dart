@@ -108,6 +108,21 @@ class FirebaseAuthService {
     }
   }
 
+  // Deletes currently signed-in Firebase user (if any).
+  Future<void> deleteCurrentUser() async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        return;
+      }
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (_) {
+      throw Exception('Failed to remove account. Please try again.');
+    }
+  }
+
   // Password Reset
   Future<void> sendPasswordResetEmail(String email) async {
     try {

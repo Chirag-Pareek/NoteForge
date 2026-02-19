@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/responsive/app_breakpoints.dart';
+import '../../../core/theme/app_effects.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_effects.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/widgets/app_dialog.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../home/presentation/widgets/note_list_card.dart';
 import 'controllers/notes_controller.dart';
 
 /// Lists all subjects with CRUD support.
@@ -34,11 +35,13 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
     final secondaryText = isDark
         ? AppColorsDark.secondaryText
         : AppColorsLight.secondaryText;
-    final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
-    final cardColor = isDark
-        ? AppColorsDark.lightBackground
+    final fabBackground = isDark
+        ? AppColorsDark.background
         : AppColorsLight.background;
-
+    final fabForeground = isDark
+        ? AppColorsDark.primaryText
+        : AppColorsLight.primaryText;
+    final fabBorder = secondaryText.withAlpha((0.38 * 255).toInt());
     return Scaffold(
       appBar: AppBar(
         title: Text('Subjects', style: AppTextStyles.titleMedium),
@@ -47,10 +50,10 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addSubject(context),
-        backgroundColor: isDark
-            ? AppColorsDark.primaryButton
-            : AppColorsLight.primaryButton,
-        foregroundColor: isDark ? Colors.black : Colors.white,
+        // FIX: create button color corrected (light=white, dark=black).
+        backgroundColor: fabBackground,
+        foregroundColor: fabForeground,
+        shape: CircleBorder(side: BorderSide(color: fabBorder)),
         child: const Icon(Icons.add),
       ),
       body: Consumer<NotesController>(
@@ -104,10 +107,12 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                     const SizedBox(height: AppSpacing.sm),
                 itemBuilder: (context, index) {
                   final subject = ctrl.subjects[index];
-                  final accent = Color(
-                    int.tryParse(subject.color) ?? 0xFF6B7280,
-                  );
-                  return InkWell(
+                  // FIX: corrected subject card to use AppCard via NoteListCard.
+                  return NoteListCard(
+                    icon: Icons.folder_outlined,
+                    title: subject.name,
+                    subtitle:
+                        '${subject.chaptersCount} chapters \u2022 Updated ${_formatDate(subject.updatedAt)}',
                     onTap: () {
                       Navigator.pushNamed(
                         context,
@@ -120,59 +125,6 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                     },
                     onLongPress: () =>
                         _showOptions(context, subject.id, subject.name),
-                    borderRadius: AppRadius.mdBorder,
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      decoration: BoxDecoration(
-                        color: cardColor,
-                        border: Border.all(color: borderColor),
-                        borderRadius: AppRadius.mdBorder,
-                        boxShadow: AppEffects.subtleDepth(brightness),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: accent.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                            ),
-                            child: Icon(
-                              Icons.folder_outlined,
-                              color: accent,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.lg),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  subject.name,
-                                  style: AppTextStyles.bodyLarge.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.xs),
-                                Text(
-                                  '${subject.chaptersCount} chapters - Updated ${_formatDate(subject.updatedAt)}',
-                                  style: AppTextStyles.label.copyWith(
-                                    color: secondaryText,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            Icons.chevron_right,
-                            color: secondaryText,
-                            size: 20,
-                          ),
-                        ],
-                      ),
-                    ),
                   );
                 },
               ),
@@ -184,14 +136,266 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
   }
 
   Future<void> _addSubject(BuildContext context) async {
-    final name = await AppDialog.showInputDialog(
-      context: context,
-      title: 'New Subject',
-      hint: 'Enter subject name',
-      confirmLabel: 'Create',
+    final subjectDraft = await _showCreateSubjectSheet(context);
+    if (subjectDraft == null || !context.mounted) return;
+    context.read<NotesController>().addSubject(
+      subjectDraft.name,
+      description: subjectDraft.description,
     );
-    if (name == null || !context.mounted) return;
-    context.read<NotesController>().addSubject(name);
+  }
+
+  Future<_SubjectDraft?> _showCreateSubjectSheet(BuildContext context) async {
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
+    final lightBg = isDark
+        ? AppColorsDark.lightBackground
+        : AppColorsLight.lightBackground;
+    final primaryText = isDark
+        ? AppColorsDark.primaryText
+        : AppColorsLight.primaryText;
+    final secondaryText = isDark
+        ? AppColorsDark.secondaryText
+        : AppColorsLight.secondaryText;
+    final surfaceBg = isDark
+        ? AppColorsDark.background
+        : AppColorsLight.background;
+
+    int wordCount = 0;
+    String? validationMessage;
+
+    final result = await showModalBottomSheet<_SubjectDraft>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: surfaceBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: AppSpacing.xl,
+                right: AppSpacing.xl,
+                top: AppSpacing.xl,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: borderColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Text(
+                    'New Subject',
+                    style: AppTextStyles.titleMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: AppRadius.mdBorder,
+                      boxShadow: AppEffects.subtleDepth(
+                        Theme.of(context).brightness,
+                      ),
+                    ),
+                    child: TextField(
+                      controller: nameController,
+                      autofocus: true,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: primaryText,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Enter subject name',
+                        hintStyle: AppTextStyles.bodyMedium.copyWith(
+                          color: secondaryText,
+                        ),
+                        filled: true,
+                        fillColor: lightBg,
+                        border: OutlineInputBorder(
+                          borderRadius: AppRadius.mdBorder,
+                          borderSide: BorderSide(color: borderColor),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: AppRadius.mdBorder,
+                          borderSide: BorderSide(color: borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: AppRadius.mdBorder,
+                          borderSide: BorderSide(color: primaryText),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                          vertical: AppSpacing.md,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: AppRadius.mdBorder,
+                      boxShadow: AppEffects.subtleDepth(
+                        Theme.of(context).brightness,
+                      ),
+                    ),
+                    child: TextField(
+                      controller: descriptionController,
+                      minLines: 4,
+                      maxLines: 6,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: primaryText,
+                      ),
+                      onChanged: (value) {
+                        setSheetState(() {
+                          wordCount = _countWords(value);
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Enter subject description (optional)',
+                        hintStyle: AppTextStyles.bodyMedium.copyWith(
+                          color: secondaryText,
+                        ),
+                        filled: true,
+                        fillColor: lightBg,
+                        border: OutlineInputBorder(
+                          borderRadius: AppRadius.mdBorder,
+                          borderSide: BorderSide(color: borderColor),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: AppRadius.mdBorder,
+                          borderSide: BorderSide(color: borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: AppRadius.mdBorder,
+                          borderSide: BorderSide(color: primaryText),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                          vertical: AppSpacing.md,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    '$wordCount/50 words',
+                    style: AppTextStyles.label.copyWith(color: secondaryText),
+                  ),
+                  if (validationMessage != null) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      validationMessage!,
+                      style: AppTextStyles.label.copyWith(
+                        color: isDark
+                            ? AppColorsDark.error
+                            : AppColorsLight.error,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.xl),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: surfaceBg,
+                            foregroundColor: primaryText,
+                            side: BorderSide(color: borderColor),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppRadius.mdBorder,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.md,
+                            ),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: AppTextStyles.button.copyWith(
+                              color: primaryText,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            final name = nameController.text.trim();
+                            final description = descriptionController.text
+                                .trim();
+
+                            if (name.isEmpty) {
+                              setSheetState(() {
+                                validationMessage = 'Subject name is required.';
+                              });
+                              return;
+                            }
+
+                            Navigator.pop(
+                              ctx,
+                              _SubjectDraft(
+                                name: name,
+                                description: description,
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isDark
+                                ? AppColorsDark.primaryButton
+                                : AppColorsLight.primaryButton,
+                            foregroundColor: isDark
+                                ? Colors.black
+                                : Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppRadius.mdBorder,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.md,
+                            ),
+                          ),
+                          child: Text(
+                            'Create',
+                            style: AppTextStyles.button.copyWith(
+                              color: isDark ? Colors.black : Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    // Keep controllers unmanaged here to avoid dispose-during-dismiss issues
+    // when the sheet is closed via Cancel/backdrop tap.
+    return result;
+  }
+
+  int _countWords(String text) {
+    final parts = text
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty);
+    return parts.length;
   }
 
   void _showOptions(BuildContext context, String id, String name) {
@@ -267,4 +471,11 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return '${date.day}/${date.month}/${date.year}';
   }
+}
+
+class _SubjectDraft {
+  final String name;
+  final String description;
+
+  const _SubjectDraft({required this.name, required this.description});
 }

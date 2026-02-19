@@ -144,6 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
           key: const ValueKey<String>('home-screen'),
           appBar: AppBar(
             centerTitle: true,
+            forceMaterialTransparency: true,
             leading: const SizedBox(), // removes back button
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             elevation: 0,

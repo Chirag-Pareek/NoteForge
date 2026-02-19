@@ -66,6 +66,11 @@ class AuthRepository {
     await _authService.signOut();
   }
 
+  // Delete current authenticated user.
+  Future<void> deleteCurrentUser() async {
+    await _authService.deleteCurrentUser();
+  }
+
   // Password Reset
   Future<void> sendPasswordResetEmail(String email) async {
     // Initiate Firebase password reset flow.

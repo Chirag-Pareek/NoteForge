@@ -58,7 +58,7 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _handleGoogleSignup() async {
-    final result = await _authController.signInWithGoogle();
+    final result = await _authController.signInWithGoogle(allowNewUser: true);
 
     if (!mounted) return;
 

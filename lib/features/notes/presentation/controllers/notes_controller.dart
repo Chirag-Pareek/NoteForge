@@ -71,18 +71,32 @@ class NotesController extends ChangeNotifier {
     );
   }
 
-  Future<void> addSubject(String name, {String color = '0xFF6B7280'}) async {
+  Future<void> addSubject(
+    String name, {
+    String? description,
+    String color = '0xFF6B7280',
+  }) async {
     try {
-      await _repo.addSubject(name, color);
+      await _repo.addSubject(name, color, description: description);
     } catch (e) {
       _error = e.toString();
       notifyListeners();
     }
   }
 
-  Future<void> updateSubject(String id, {String? name, String? color}) async {
+  Future<void> updateSubject(
+    String id, {
+    String? name,
+    String? color,
+    String? description,
+  }) async {
     try {
-      await _repo.updateSubject(id, name: name, color: color);
+      await _repo.updateSubject(
+        id,
+        name: name,
+        color: color,
+        description: description,
+      );
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -107,18 +121,20 @@ class NotesController extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    _chaptersSub = _repo.watchChapters(subjectId).listen(
-      (list) {
-        _chapters = list;
-        _isLoading = false;
-        notifyListeners();
-      },
-      onError: (e) {
-        _error = e.toString();
-        _isLoading = false;
-        notifyListeners();
-      },
-    );
+    _chaptersSub = _repo
+        .watchChapters(subjectId)
+        .listen(
+          (list) {
+            _chapters = list;
+            _isLoading = false;
+            notifyListeners();
+          },
+          onError: (e) {
+            _error = e.toString();
+            _isLoading = false;
+            notifyListeners();
+          },
+        );
   }
 
   Future<void> addChapter(String subjectId, String name) async {
@@ -157,22 +173,23 @@ class NotesController extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    _topicsSub = _repo.watchTopics(chapterId).listen(
-      (list) {
-        _topics = list;
-        _isLoading = false;
-        notifyListeners();
-      },
-      onError: (e) {
-        _error = e.toString();
-        _isLoading = false;
-        notifyListeners();
-      },
-    );
+    _topicsSub = _repo
+        .watchTopics(chapterId)
+        .listen(
+          (list) {
+            _topics = list;
+            _isLoading = false;
+            notifyListeners();
+          },
+          onError: (e) {
+            _error = e.toString();
+            _isLoading = false;
+            notifyListeners();
+          },
+        );
   }
 
-  Future<void> addTopic(
-      String chapterId, String subjectId, String name) async {
+  Future<void> addTopic(String chapterId, String subjectId, String name) async {
     try {
       await _repo.addTopic(chapterId, subjectId, name);
     } catch (e) {
@@ -208,28 +225,28 @@ class NotesController extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    _notesSub = _repo.watchNotes(topicId).listen(
-      (list) {
-        _notes = list;
-        _isLoading = false;
-        notifyListeners();
-      },
-      onError: (e) {
-        _error = e.toString();
-        _isLoading = false;
-        notifyListeners();
-      },
-    );
+    _notesSub = _repo
+        .watchNotes(topicId)
+        .listen(
+          (list) {
+            _notes = list;
+            _isLoading = false;
+            notifyListeners();
+          },
+          onError: (e) {
+            _error = e.toString();
+            _isLoading = false;
+            notifyListeners();
+          },
+        );
   }
 
   void loadRecentNotes() {
     _recentNotesSub?.cancel();
-    _recentNotesSub = _repo.watchRecentNotes(limit: 5).listen(
-      (list) {
-        _recentNotes = list;
-        notifyListeners();
-      },
-    );
+    _recentNotesSub = _repo.watchRecentNotes(limit: 3).listen((list) {
+      _recentNotes = list;
+      notifyListeners();
+    });
   }
 
   Future<NoteModel> createNote({

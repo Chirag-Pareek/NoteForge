@@ -190,6 +190,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           appBar: AppBar(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             elevation: 0,
+            forceMaterialTransparency: true,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context),

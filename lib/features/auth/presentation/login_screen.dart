@@ -52,14 +52,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleGoogleLogin() async {
-    final result = await _authController.signInWithGoogle();
+    final result = await _authController.signInWithGoogle(allowNewUser: false);
 
     if (!mounted) return;
 
     if (result == AuthResult.success) {
       Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
-    } else if (result == AuthResult.newUser) {
-      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profileSetup, (route) => false);
     }
   }
 

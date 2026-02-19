@@ -1,14 +1,14 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:noteforge/core/theme/app_colors.dart';
 import 'package:noteforge/core/theme/app_radius.dart';
 import 'package:noteforge/core/theme/app_spacing.dart';
-import 'package:noteforge/core/widgets/app_card.dart';
 
 /// Community-style floating nav for the Progress section.
 class FloatingProgressNav extends StatelessWidget {
-  static const double height = 56.0;
+  static const double height = 52.0;
 
   final int index;
   final ValueChanged<int> onChanged;
@@ -21,80 +21,110 @@ class FloatingProgressNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
-    final textColor = isDark
-        ? AppColorsDark.primaryText
-        : AppColorsLight.primaryText;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.primary;
     final idleColor = isDark
         ? AppColorsDark.secondaryText
         : AppColorsLight.secondaryText;
-    final baseColor = isDark
-        ? AppColorsDark.background
+    final glassBase = isDark
+        ? AppColorsDark.lightBackground
         : AppColorsLight.background;
+    final backgroundColor = glassBase.withAlpha((0.68 * 255).toInt());
+    final borderColor = idleColor.withAlpha((0.24 * 255).toInt());
+    final indicatorColor = primaryColor.withAlpha(
+      ((isDark ? 0.24 : 0.14) * 255).toInt(),
+    );
+    final rippleColor = primaryColor.withAlpha((0.16 * 255).toInt());
+
+    const items = <_NavItem>[
+      _NavItem(
+        icon: Icons.dashboard_outlined,
+        activeIcon: Icons.dashboard_rounded,
+        label: 'Overview',
+      ),
+      _NavItem(
+        icon: Icons.calendar_today_outlined,
+        activeIcon: Icons.calendar_today_rounded,
+        label: 'Calendar',
+      ),
+      _NavItem(
+        icon: Icons.bar_chart_outlined,
+        activeIcon: Icons.bar_chart_rounded,
+        label: 'Analytics',
+      ),
+      _NavItem(
+        icon: Icons.psychology_outlined,
+        activeIcon: Icons.psychology_rounded,
+        label: 'AI Insights',
+      ),
+    ];
+
+    final clampedIndex = index.clamp(0, items.length - 1);
+    final navWidth = (items.length * 58.0) + (AppSpacing.sm * 2);
 
     return SizedBox(
       height: height,
+      width: navWidth,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.full),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: AppCard(
-            enableInk: false,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: AppSpacing.xs,
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+              border: Border.all(color: borderColor, width: 0.85),
             ),
-            borderRadius: BorderRadius.circular(AppRadius.full),
-            borderColor: borderColor.withAlpha((0.7 * 255).toInt()),
-            backgroundColor: baseColor.withAlpha((0.82 * 255).toInt()),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _NavIcon(
-                  isSelected: index == 0,
-                  icon: Icons.dashboard_outlined,
-                  activeIcon: Icons.dashboard_rounded,
-                  label: 'Overview',
-                  borderColor: borderColor,
-                  activeColor: textColor,
-                  inactiveColor: idleColor,
-                  onTap: () => onChanged(0),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                _NavIcon(
-                  isSelected: index == 1,
-                  icon: Icons.calendar_today_outlined,
-                  activeIcon: Icons.calendar_today_rounded,
-                  label: 'Calendar',
-                  borderColor: borderColor,
-                  activeColor: textColor,
-                  inactiveColor: idleColor,
-                  onTap: () => onChanged(1),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                _NavIcon(
-                  isSelected: index == 2,
-                  icon: Icons.bar_chart_outlined,
-                  activeIcon: Icons.bar_chart_rounded,
-                  label: 'Analytics',
-                  borderColor: borderColor,
-                  activeColor: textColor,
-                  inactiveColor: idleColor,
-                  onTap: () => onChanged(2),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                _NavIcon(
-                  isSelected: index == 3,
-                  icon: Icons.psychology_outlined,
-                  activeIcon: Icons.psychology_rounded,
-                  label: 'AI Insights',
-                  borderColor: borderColor,
-                  activeColor: textColor,
-                  inactiveColor: idleColor,
-                  onTap: () => onChanged(3),
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final slotWidth = constraints.maxWidth / items.length;
+
+                return Stack(
+                  children: [
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      left: slotWidth * clampedIndex,
+                      top: 0,
+                      width: slotWidth,
+                      height: constraints.maxHeight,
+                      child: Center(
+                        child: FractionallySizedBox(
+                          widthFactor: 0.82,
+                          heightFactor: 0.88,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: indicatorColor,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.full,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: List.generate(items.length, (itemIndex) {
+                        final item = items[itemIndex];
+                        return Expanded(
+                          child: _NavIconButton(
+                            isSelected: itemIndex == clampedIndex,
+                            icon: item.icon,
+                            activeIcon: item.activeIcon,
+                            label: item.label,
+                            activeColor: primaryColor,
+                            inactiveColor: idleColor,
+                            rippleColor: rippleColor,
+                            onTap: () => onChanged(itemIndex),
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -103,56 +133,88 @@ class FloatingProgressNav extends StatelessWidget {
   }
 }
 
-class _NavIcon extends StatelessWidget {
+class _NavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
+}
+
+class _NavIconButton extends StatefulWidget {
   final bool isSelected;
   final IconData icon;
   final IconData activeIcon;
   final String label;
-  final Color borderColor;
   final Color activeColor;
   final Color inactiveColor;
+  final Color rippleColor;
   final VoidCallback onTap;
 
-  const _NavIcon({
+  const _NavIconButton({
     required this.isSelected,
     required this.icon,
     required this.activeIcon,
     required this.label,
-    required this.borderColor,
     required this.activeColor,
     required this.inactiveColor,
+    required this.rippleColor,
     required this.onTap,
   });
 
   @override
+  State<_NavIconButton> createState() => _NavIconButtonState();
+}
+
+class _NavIconButtonState extends State<_NavIconButton> {
+  bool _isPressed = false;
+
+  void _setPressed(bool value) {
+    if (_isPressed == value) {
+      return;
+    }
+    setState(() => _isPressed = value);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final fillColor = activeColor.withAlpha((0.10 * 255).toInt());
-    final color = isSelected ? activeColor : inactiveColor;
+    final color = widget.isSelected ? widget.activeColor : widget.inactiveColor;
+    final scale = _isPressed ? 0.92 : (widget.isSelected ? 1.04 : 1.0);
 
     return Semantics(
-      label: label,
+      label: widget.label,
       button: true,
-      selected: isSelected,
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm,
-          ),
-          decoration: BoxDecoration(
-            color: isSelected ? fillColor : Colors.transparent,
+      selected: widget.isSelected,
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOutCubic,
+        scale: scale,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              widget.onTap();
+            },
+            onTapDown: (_) => _setPressed(true),
+            onTapCancel: () => _setPressed(false),
+            onTapUp: (_) => _setPressed(false),
             borderRadius: BorderRadius.circular(AppRadius.full),
-            border: Border.all(
-              color: isSelected ? borderColor : Colors.transparent,
+            splashColor: widget.rippleColor,
+            highlightColor: widget.rippleColor.withAlpha((0.08 * 255).toInt()),
+            child: SizedBox.expand(
+              child: Center(
+                child: Icon(
+                  widget.isSelected ? widget.activeIcon : widget.icon,
+                  size: 21,
+                  color: color,
+                ),
+              ),
             ),
-          ),
-          child: AnimatedScale(
-            duration: const Duration(milliseconds: 200),
-            scale: isSelected ? 1.05 : 1.0,
-            child: Icon(isSelected ? activeIcon : icon, size: 22, color: color),
           ),
         ),
       ),

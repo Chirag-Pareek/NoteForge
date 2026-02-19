@@ -28,6 +28,7 @@ class ProgressHomeScreen extends StatefulWidget {
 class _ProgressHomeScreenState extends State<ProgressHomeScreen> {
   // Current selected tab index: 0=Overview, 1=Calendar, 2=Analytics, 3=AI.
   int _selectedIndex = 0;
+  final PageController _pageController = PageController();
 
   // Demo data for progress tracking
   final int _currentStreak = 7;
@@ -83,6 +84,18 @@ class _ProgressHomeScreenState extends State<ProgressHomeScreen> {
     setState(() {
       _selectedIndex = index;
     });
+
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   /// Opens a modern market-style chart for a subject's learning timeline.
@@ -99,22 +112,6 @@ class _ProgressHomeScreenState extends State<ProgressHomeScreen> {
       builder: (_) =>
           SubjectLearningChartSheet(subject: subject, points: series),
     );
-  }
-
-  /// Builds the active screen and offsets it below the floating nav.
-  Widget _buildActiveScreen(double topPadding) {
-    switch (_selectedIndex) {
-      case 0:
-        return _buildOverviewScreen(topPadding);
-      case 1:
-        return CalendarScreen(topPadding: topPadding);
-      case 2:
-        return AnalyticsScreen(topPadding: topPadding);
-      case 3:
-        return AiInsightsScreen(topPadding: topPadding);
-      default:
-        return _buildOverviewScreen(topPadding);
-    }
   }
 
   /// Overview Dashboard - Main screen showing all key metrics
@@ -302,7 +299,16 @@ class _ProgressHomeScreenState extends State<ProgressHomeScreen> {
       ),
       body: Stack(
         children: [
-          _buildActiveScreen(topInset),
+          PageView(
+            controller: _pageController,
+            onPageChanged: (index) => setState(() => _selectedIndex = index),
+            children: [
+              _buildOverviewScreen(topInset),
+              CalendarScreen(topPadding: topInset),
+              AnalyticsScreen(topPadding: topInset),
+              AiInsightsScreen(topPadding: topInset),
+            ],
+          ),
 
           // Floating navigation bar aligned exactly like Community.
           Positioned(

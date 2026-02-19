@@ -166,10 +166,10 @@ class AuthController extends ChangeNotifier {
   }
 
   /// ---------------------------
-  /// GOOGLE SIGN IN
+  /// GOOGLE AUTH
   /// ---------------------------
 
-  Future<AuthResult> signInWithGoogle() async {
+  Future<AuthResult> signInWithGoogle({bool allowNewUser = true}) async {
     _clearMessages();
 
     if (!await _hasInternet()) {
@@ -182,16 +182,35 @@ class AuthController extends ChangeNotifier {
     try {
       final user = await _authRepository.signInWithGoogle();
 
-      _setLoading(false);
-
       if (user == null) {
+        _setLoading(false);
         return AuthResult.cancelled;
       }
 
       if (user.isNewUser) {
+        if (!allowNewUser) {
+          try {
+            await _authRepository.deleteCurrentUser();
+          } catch (_) {
+            // Best effort cleanup; continue to sign out session.
+          }
+
+          try {
+            await _authRepository.signOut();
+          } catch (_) {
+            // Ignore sign-out cleanup error and still surface the real flow error.
+          }
+
+          _setLoading(false);
+          _setError('No account found for this Google account. Create one from Sign Up first.');
+          return AuthResult.failure;
+        }
+
+        _setLoading(false);
         return AuthResult.newUser;
       }
 
+      _setLoading(false);
       return AuthResult.success;
     } catch (e) {
       _setError(_mapFirebaseError(e));

@@ -6,7 +6,11 @@ import '../../../core/responsive/app_breakpoints.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_card.dart';
+import '../../../core/widgets/app_outlined_button.dart';
 import 'controllers/profile_controller.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_stat_card.dart';
@@ -17,7 +21,7 @@ import 'widgets/profile_option_tile.dart';
 /// Displays the user's profile information:
 /// - Avatar
 /// - Username & bio
-/// - Stats (streak, tests, wins)
+/// - Stats (posts, followers, following)
 /// - Profile-related actions (edit, logout, etc.)
 ///
 /// Data source:
@@ -61,28 +65,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _handleLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Log Out', style: AppTextStyles.titleMedium),
-        content: Text(
-          'Are you sure you want to log out?',
-          style: AppTextStyles.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: AppTextStyles.bodyMedium),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Log Out',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColorsLight.error,
-              ),
+      builder: (dialogContext) {
+        final isDark = Theme.of(dialogContext).brightness == Brightness.dark;
+        final secondaryText = isDark
+            ? AppColorsDark.secondaryText
+            : AppColorsLight.secondaryText;
+        final primaryText = isDark
+            ? AppColorsDark.primaryText
+            : AppColorsLight.primaryText;
+
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+          child: AppCard(
+            enableInk: false,
+            borderRadius: AppRadius.lgBorder,
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.logout, size: 20, color: primaryText),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text('Log Out', style: AppTextStyles.titleMedium),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Are you sure you want to log out?',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: secondaryText,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppOutlinedButton(
+                        label: 'Cancel',
+                        onPressed: () => Navigator.pop(dialogContext, false),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: AppButton(
+                        label: 'Log Out',
+                        onPressed: () => Navigator.pop(dialogContext, true),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
 
     if (shouldLogout == true) {
@@ -137,10 +176,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ? profile!.photoUrl
         : null;
 
-    // Existing stat cards remain unchanged since they are not part of ProfileModel.
-    const streak = 7;
-    const tests = 24;
-    const wins = 12;
+    // Placeholder stats until social metrics are wired from backend.
+    const posts = 24;
+    const followers = 120;
+    const following = 86;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -152,6 +191,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           appBar: AppBar(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             elevation: 0,
+            forceMaterialTransparency: true,
+            centerTitle: true,
             title: Text('Profile', style: AppTextStyles.bodyLarge),
             actions: [
               IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
@@ -176,9 +217,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          ProfileStatCard(value: '$streak', label: 'Streak'),
-                          ProfileStatCard(value: '$tests', label: 'Tests'),
-                          ProfileStatCard(value: '$wins', label: 'Wins'),
+                          ProfileStatCard(value: '$posts', label: 'Posts'),
+                          ProfileStatCard(
+                            value: '$followers',
+                            label: 'Followers',
+                          ),
+                          ProfileStatCard(
+                            value: '$following',
+                            label: 'Following',
+                          ),
                         ],
                       ),
                     ),

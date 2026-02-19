@@ -404,6 +404,7 @@ class _ChatWithAiScreenState extends State<ChatWithAiScreen> {
               ? AppColorsDark.background
               : AppColorsLight.background,
           elevation: 0,
+          forceMaterialTransparency: true,
           leading: AppIconButton(
             icon: hasEmbeddedBack ? Icons.arrow_back : Icons.menu,
             onPressed: hasEmbeddedBack

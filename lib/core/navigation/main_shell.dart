@@ -37,71 +37,76 @@ class _MainShellState extends State<MainShell> {
         : AppColorsLight.secondaryText;
     final borderColor = isDark ? AppColorsDark.border : AppColorsLight.border;
 
-    return Scaffold(
-      // Keep tab state alive by stacking screens.
-      body: IndexedStack(index: _selectedIndex, children: _screens),
-      bottomNavigationBar: Container(
-        // Custom bottom bar with a top border.
-        height: 64,
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          border: Border(top: BorderSide(color: borderColor)),
-          boxShadow: AppEffects.subtleDepth(Theme.of(context).brightness),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            // Home tab
-            _NavItem(
-              icon: Icons.home_outlined,
-              activeIcon: Icons.home,
-              // label: 'Home',
-              isActive: _selectedIndex == 0,
-              onTap: () => setState(() => _selectedIndex = 0),
-              activeColor: primaryText,
-              inactiveColor: secondaryText,
-            ),
-            // Study tab
-            _NavItem(
-              icon: Icons.menu_book_outlined,
-              activeIcon: Icons.menu_book,
-              // label: 'Study',
-              isActive: _selectedIndex == 1,
-              onTap: () => setState(() => _selectedIndex = 1),
-              activeColor: primaryText,
-              inactiveColor: secondaryText,
-            ),
-            // Community tab
-            _NavItem(
-              icon: Icons.groups_2_outlined,
-              activeIcon: Icons.groups_2_rounded,
-              // label: 'Community',
-              isActive: _selectedIndex == 2,
-              onTap: () => setState(() => _selectedIndex = 2),
-              activeColor: primaryText,
-              inactiveColor: secondaryText,
-            ),
-            // Progress tab
-            _NavItem(
-              icon: Icons.show_chart_outlined,
-              activeIcon: Icons.show_chart,
-              // label: 'Progress',
-              isActive: _selectedIndex == 3,
-              onTap: () => setState(() => _selectedIndex = 3),
-              activeColor: primaryText,
-              inactiveColor: secondaryText,
-            ),
-            // Profile tab
-            _NavItem(
-              icon: Icons.person_outline,
-              activeIcon: Icons.person,
-              // label: 'Profile',
-              isActive: _selectedIndex == 4,
-              onTap: () => setState(() => _selectedIndex = 4),
-              activeColor: primaryText,
-              inactiveColor: secondaryText,
-            ),
-          ],
+    return PopScope(
+      // Prevent popping MainShell via back-swipe/back-button.
+      // User should return to auth screens only through explicit logout.
+      canPop: false,
+      child: Scaffold(
+        // Keep tab state alive by stacking screens.
+        body: IndexedStack(index: _selectedIndex, children: _screens),
+        bottomNavigationBar: Container(
+          // Custom bottom bar with a top border.
+          height: 64,
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            border: Border(top: BorderSide(color: borderColor)),
+            boxShadow: AppEffects.subtleDepth(Theme.of(context).brightness),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              // Home tab
+              _NavItem(
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home,
+                // label: 'Home',
+                isActive: _selectedIndex == 0,
+                onTap: () => setState(() => _selectedIndex = 0),
+                activeColor: primaryText,
+                inactiveColor: secondaryText,
+              ),
+              // Study tab
+              _NavItem(
+                icon: Icons.menu_book_outlined,
+                activeIcon: Icons.menu_book,
+                // label: 'Study',
+                isActive: _selectedIndex == 1,
+                onTap: () => setState(() => _selectedIndex = 1),
+                activeColor: primaryText,
+                inactiveColor: secondaryText,
+              ),
+              // Community tab
+              _NavItem(
+                icon: Icons.groups_2_outlined,
+                activeIcon: Icons.groups_2_rounded,
+                // label: 'Community',
+                isActive: _selectedIndex == 2,
+                onTap: () => setState(() => _selectedIndex = 2),
+                activeColor: primaryText,
+                inactiveColor: secondaryText,
+              ),
+              // Progress tab
+              _NavItem(
+                icon: Icons.show_chart_outlined,
+                activeIcon: Icons.show_chart,
+                // label: 'Progress',
+                isActive: _selectedIndex == 3,
+                onTap: () => setState(() => _selectedIndex = 3),
+                activeColor: primaryText,
+                inactiveColor: secondaryText,
+              ),
+              // Profile tab
+              _NavItem(
+                icon: Icons.person_outline,
+                activeIcon: Icons.person,
+                // label: 'Profile',
+                isActive: _selectedIndex == 4,
+                onTap: () => setState(() => _selectedIndex = 4),
+                activeColor: primaryText,
+                inactiveColor: secondaryText,
+              ),
+            ],
+          ),
         ),
       ),
     );
